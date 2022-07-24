@@ -30,6 +30,14 @@ const PlateContainer = styled.div`
 
 const ButtonContainer = styled.div`
   width: 80%;
+  #svg-button-text {
+    text-anchor: middle;
+    font-family: "News Cycle";
+    font-size: 16px;
+    fill: black;
+    stroke: black;
+    stroke-width: 0.1px;
+  };
 `;
 const LowerContainer = styled.div`
   justify-content: space-between;
@@ -58,7 +66,7 @@ function Home() {
   const navigate = useNavigate();
 
   const clickButton = () => {
-    navigate("/game");
+    navigate("/singlePlayer");
   };
 
   return (
