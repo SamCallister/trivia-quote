@@ -5,7 +5,7 @@ function getFakePlayer() {
         playerName: "sup",
         playerId: "434234",
         playerAvatar: "jane",
-        socket: { onmessage: (msg) => { } }
+        socket: { onmessage: (msg: string) => { } }
     };
 }
 

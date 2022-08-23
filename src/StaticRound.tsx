@@ -23,10 +23,15 @@ const Container = styled.div`
 	flex-direction: column;
 `;
 
+interface StaticRoundProps {
+	title: string;
+	category: string;
+}
 
 
-function StaticRound(props) {
-	const { title, category, roundNumber } = props;
+
+function StaticRound(props: StaticRoundProps) {
+	const { title, category } = props;
 
 	return (<Container><Title>{title}</Title>
 		<Category>{category}</Category>

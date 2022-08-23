@@ -1,9 +1,28 @@
 import React, { useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import "./AnswerButton.css";
-import styled from "styled-components";
+import styled, { StyledComponent } from "styled-components";
 
-const Path = styled.path`
+interface PathProps {
+	state: string;
+}
+
+interface ButtonClickedFunc {
+	(data: QuestionData): void;
+}
+
+interface QuestionData {
+	text: string;
+	state: string;
+}
+
+interface AnswerButtonProps {
+	buttonClicked: ButtonClickedFunc;
+	data: QuestionData;
+}
+
+
+const Path = styled.path<PathProps>`
 ${({ state }) => {
 		if (state == "selected") {
 			return `stroke:#B8860B;
@@ -28,9 +47,7 @@ const Svg = styled.svg`
 `;
 
 
-// <Path state={data.state} id="svg-button-outline" d="M359.794 53H22.0368L1 39.8219V14.8904L22.6212 1H360.379L382 14.8904V39.8219L360.379 53" />
-
-function AnswerButton(props) {
+function AnswerButton(props: AnswerButtonProps) {
 	const { data, buttonClicked } = props;
 
 	const clickHandler = () => {

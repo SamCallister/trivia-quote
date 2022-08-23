@@ -2,6 +2,10 @@ import React, { useEffect, useRef } from "react";
 import styled from "styled-components";
 import Snap from 'snapsvg-cjs';
 
+interface TimeBarProps {
+	delay: number;
+}
+
 const RectContainer = styled.div`
 background-color: #D3D3D3;
 height:100%;
@@ -13,7 +17,7 @@ width:100%;
 `;
 
 
-function TimeBar(props) {
+function TimeBar(props: TimeBarProps) {
 
 	const { delay } = props;
 	const svgRef = useRef(null);

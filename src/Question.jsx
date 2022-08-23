@@ -65,7 +65,7 @@ function Question(props) {
 			})
 			setChoiceIndex(selectedIndex);
 			setChoices(newChoices);
-			onChange({choice:stateChoices[selectedIndex], questionId});
+			onChange(stateChoices[selectedIndex], questionId);
 		}
 	};
 

@@ -1,7 +1,7 @@
 import React from "react";
 import "./App.css";
-import Home from "./Home.jsx";
-import Game from "./Game.jsx";
+import Home from "./Home";
+import Game from "./Game";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { QueryClient, QueryClientProvider } from 'react-query';

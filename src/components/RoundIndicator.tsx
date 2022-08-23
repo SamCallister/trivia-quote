@@ -2,6 +2,11 @@ import React from "react";
 import styled from "styled-components";
 import { range } from 'lodash';
 
+interface RoundIndicatorProps {
+	numRounds: number;
+	roundNumber: number;
+};
+
 const Line = styled.line`
 stroke-width: 0.5px;
 stroke: black;`;
@@ -23,7 +28,7 @@ stroke:green;
 fill: white;`;
 
 
-function RoundIndicator(props) {
+function RoundIndicator(props: RoundIndicatorProps) {
 	const { numRounds, roundNumber } = props;
 
 	const start = 25;

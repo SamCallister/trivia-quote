@@ -1,7 +1,11 @@
-import React from "react";
+import React, { ReactNode } from "react";
 import PropTypes from "prop-types";
 
-function SvgButton(props) {
+interface SvgButtonProps {
+  children: ReactNode;
+}
+
+function SvgButton(props:SvgButtonProps) {
   const { children } = props;
 
   return (<svg viewBox="0 0 187 48" fill="none" xmlns="http://www.w3.org/2000/svg">

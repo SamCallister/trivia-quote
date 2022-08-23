@@ -1,28 +1,27 @@
 
+class SinglePlayerSocket {
+	send: SocketSendFunc;
+	onmessage: OnMessageFunc;
 
-function SinglePlayerSocket() {
-	// send round message
-}
-
-SinglePlayerSocket.prototype.listen = function () {
-	return
-}
-
-SinglePlayerSocket.prototype.send = function () {
-	return
-}
-
-function wait(s) {
-	if (s.onmessage) {
-		return Promise.resolve(s);
-	} else {
-		return new Promise((resolve) => {
-			setTimeout(() => {
-				resolve(wait(s));
-			}, 500);
-		})
+	constructor(onmessageFunc:OnMessageFunc) {
+		this.onmessage = onmessageFunc;
 	}
+
+
 }
+
+
+// function wait(s) {
+// 	if (s.onmessage) {
+// 		return Promise.resolve(s);
+// 	} else {
+// 		return new Promise((resolve) => {
+// 			setTimeout(() => {
+// 				resolve(wait(s));
+// 			}, 500);
+// 		})
+// 	}
+// }
 
 // build out the game state machine
 // build the first round questions
@@ -31,8 +30,8 @@ function wait(s) {
 // deal with timeout
 // do round calculation
 
-function getSinglePlayerSocket() {
-	const s = new SinglePlayerSocket();
+function getSinglePlayerSocket(onmessage:OnMessageFunc): Socket {
+	return new SinglePlayerSocket(onmessage);
 
 	// gameInfo.messages.reduce((p, m) => {
 	// 	return p.then(() => {
@@ -53,9 +52,6 @@ function getSinglePlayerSocket() {
 	// }));
 
 	// handle getting message
-
-
-	return s;
 }
 
 export { getSinglePlayerSocket };

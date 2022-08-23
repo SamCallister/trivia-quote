@@ -83,7 +83,7 @@ function Home() {
           <NamePlate></NamePlate>
           <NameInput
             value={playerName}
-            onChange={(v) => setPlayerName(v.value)}
+            onChange={(v) => setPlayerName(v.target.value)}
           ></NameInput>
         </PlateContainer>
         <ButtonContainer onClick={clickButton}>
