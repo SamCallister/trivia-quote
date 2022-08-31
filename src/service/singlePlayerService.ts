@@ -1,4 +1,4 @@
-import { concat, forEach, keys, random, sampleSize, max, first, fill, repeat, merge, forOwn, uniqueId, get, last, isUndefined } from 'lodash';
+import { concat, forEach, keys, random, sampleSize, max, first, fill, repeat, merge, forOwn, get, last, isUndefined, map, pickBy, isEmpty, sortBy, values } from 'lodash';
 
 interface GameData {
 	[category: string]: [{
@@ -12,13 +12,13 @@ interface GameData {
 	}]
 }
 
-
 interface Player {
 	playerId: string;
 	playerName: string;
 	playerAvatar: string;
 	isFakePlayer: boolean;
 	socket: Socket;
+	playerScore: number;
 }
 
 interface Players {
@@ -35,7 +35,14 @@ interface QuestionHistory {
 	playerAnswers: PlayerAnswers;
 }
 
+interface PlayerToMessage {
+	[playerId: string]: SocketMessagesUnion;
+}
+
 const questionsPerRound = 3;
+const aiProbCorrect = 0.39;
+const pointsPerQuestion = 100;
+const ROUNDS_IN_GAME = 3;
 
 class SinglePlayerGame {
 	gameData: GameData;
@@ -68,12 +75,28 @@ class SinglePlayerGame {
 				currentQuestion.playerAnswers[playerId] = answerId;
 			}
 
-
-
 			// change the question once everyone has answered, otherwise wait until the time expires
+			if (keys(currentQuestion.playerAnswers).length === keys(this.players).length) {
+				// increment the message count so that the time run out message gets ignored
+				this.eventLoopCount += 1;
+				this.evaluateQuestionResult(currentQuestion);
+			}
 		}
+	}
 
-
+	evaluateQuestionResult(currentQuestion: QuestionHistory) {
+		// DUMMY message 1 will get made for each player
+		this.actions.unshift({
+			msgType: "questionResult",
+			delay: 0,
+			value: {
+				id: currentQuestion.id,
+				answerId: currentQuestion.answerId,
+				playerScoreDelta: 0,
+				playerScore: 0
+			}
+		});
+		this.messageLoop();
 	}
 
 	handleMessage(socketMessage: SocketMessagesUnion, playerId: string) {
@@ -85,15 +108,13 @@ class SinglePlayerGame {
 				answerId,
 				playerId
 			);
-
-			// because we are single player game
 		}
 	}
 
-	sendToClient(msgInfo: SocketMessagesUnion) {
-		forOwn(this.players, (value) => {
-			const { socket } = value;
-			socket.onmessage({ data: msgInfo });
+	sendToClients(playerToMessage: PlayerToMessage) {
+		forOwn(playerToMessage, (msg, playerId) => {
+			const { socket } = this.players[playerId];
+			socket.onmessage({ data: msg });
 		})
 	}
 
@@ -106,6 +127,7 @@ class SinglePlayerGame {
 		return chosenTopic;
 	}
 
+	// builds round, adding messages to action queue
 	setupRound(chosenTopic: string) {
 		this.currentRound += 1;
 
@@ -115,7 +137,7 @@ class SinglePlayerGame {
 		const formattedQuestions: QuestionMessage[] = questions.map((d) => {
 			return {
 				msgType: "question",
-				delay: 20 * 1000,
+				delay: 15 * 1000,
 				value: {
 					text: formatQuestionUnderlines(d.text, d.choices.map((v) => v.text)),
 					id: d.id,
@@ -128,8 +150,6 @@ class SinglePlayerGame {
 			}
 		});
 
-		console.log('here are the formatted questions', formattedQuestions)
-
 		const roundMsg: StaticRoundMessage = {
 			msgType: "staticRound",
 			delay: 1000,
@@ -140,10 +160,103 @@ class SinglePlayerGame {
 			}
 		};
 
-		return {
-			questions: formattedQuestions,
-			round: roundMsg
+		this.actions = concat(this.actions, [roundMsg], formattedQuestions);
+	}
+
+	preSendEffects(msg: SocketMessagesUnion) {
+		if (msg.msgType === "question") {
+			// setup question in the question history
+			const questionEntry: QuestionHistory = {
+				id: msg.value.id,
+				answerId: msg.answerId,
+				playerAnswers: {}
+			};
+
+			// all the fake players answer
+			const fakePlayers = pickBy(this.players, (player) => {
+				return player.isFakePlayer;
+			});
+
+			forOwn(fakePlayers, (player, playerId) => {
+				const aiPlayerAnswer = Math.random() <= aiProbCorrect ? msg.answerId : "wrongAnswer";
+				questionEntry.playerAnswers[playerId] = aiPlayerAnswer;
+			});
+
+
+			this.questionHistory.push(questionEntry);
+		}
+	}
+
+	buildPlayerToMsg(toSend: SocketMessagesUnion): PlayerToMessage {
+		if (toSend.msgType === "questionResult") {
+			// for each player check the question
+			return merge.apply(this, map(this.players, (player, playerId) => {
+
+				const currentQuestion = last(this.questionHistory);
+
+				const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
+				const playerScoreDelta = correct ? pointsPerQuestion : 0;
+				player.playerScore += playerScoreDelta;
+				const questionResultMessage = {
+					delay: 0,
+					msgType: "questionResult",
+					value: {
+						id: currentQuestion.id,
+						answerId: currentQuestion.answerId,
+						playerScoreDelta: playerScoreDelta,
+						playerScore: player.playerScore
+					}
+				}
+				return { [playerId]: questionResultMessage };
+			}));
+		} else {
+			return merge.apply(this, map(keys(this.players), (playerId: string) => {
+				return { [playerId]: toSend };
+			}));
+		}
+	}
+
+	getRankingInfo() {
+		// go through players scores
+		const orderedPlayers = sortBy(values(this.players), (p) => -p.playerScore);
+		const rankingInfo: PlayerRankingInfo[] = orderedPlayers.map((p) => {
+			return {
+				playerName: p.playerName,
+				playerAvatar: p.playerAvatar,
+				playerId: p.playerId,
+				playerScore: p.playerScore
+			};
+		});
+
+		return rankingInfo
+	}
+
+	// add message to display the rankings page
+	rankingsPage() {
+		const rankingInfo = this.getRankingInfo();
+
+		const rankingMsg: SocketMessagesUnion = {
+			msgType: "ranking",
+			delay: 3000,
+			value: {
+				ranking: rankingInfo,
+				roundNumber: this.currentRound
+			}
 		};
+		this.actions.push(rankingMsg);
+	}
+
+	finalScorePage() {
+		const rankingInfo = this.getRankingInfo();
+		const finalScoreMessage: SocketMessagesUnion = {
+			msgType: "finalScore",
+			delay: 5000,
+			value: {
+				ranking: rankingInfo,
+				roundNumber: this.currentRound
+			}
+		};
+		this.actions.push(finalScoreMessage);
 	}
 
 	messageLoop() {
@@ -155,21 +268,44 @@ class SinglePlayerGame {
 			// track the current message number
 			// if it has changed before set timeout is called, increment the number
 			setTimeout(() => {
-				if (this.eventLoopCount == currentCount) {
-					this.messageLoop();
-				}
-
 				// if question type message -> send the incorrect answer to the clients with their new score
 				// unless they have answered already
 				// if all the players answer -> 
+
+				if (this.eventLoopCount == currentCount) {
+
+					// if we get here there are players who have not answered the question before the timeout
+					if (this.currentMessage.msgType === "question") {
+						this.evaluateQuestionResult(last(this.questionHistory));
+					}
+
+					if (isEmpty(this.actions)) {
+						if (this.currentRound < ROUNDS_IN_GAME) {
+							// ranking page
+							this.rankingsPage();
+
+							// setup round
+							this.setupRound(this.randomTopic());
+						} else if (this.currentMessage.msgType !== "finalScore") {
+							// game over
+							this.finalScorePage();
+						} else {
+							return;
+						}
+					}
+
+					this.messageLoop();
+				}
+
+
 			}, toSend.delay);
 
 			this.currentMessage = toSend;
 			// setup state for question type message
-
-			this.sendToClient(toSend);
+			this.preSendEffects(toSend);
+			const playerToMsg = this.buildPlayerToMsg(toSend);
+			this.sendToClients(playerToMsg);
 		}
-
 	}
 
 	joinGame(socket: Socket, msgData: JoinGameMessage) {
@@ -182,18 +318,12 @@ class SinglePlayerGame {
 			this.handleMessage(msg, playerId);
 		};
 
-		this.players[playerId] = { playerId, playerName, playerAvatar, isFakePlayer, socket };
+		this.players[playerId] = { playerId, playerName, playerAvatar, isFakePlayer, socket, playerScore: 0 };
 	}
 
 	start() {
 		const chosenTopic = this.randomTopic();
-		const { questions, round } = this.setupRound(chosenTopic);
-		// priority queue of actions
-		// round 1, questions ...
-		// call next for each action? -> look for end state?
-		this.actions = concat(this.actions, [round], questions);
-
-
+		this.setupRound(chosenTopic);
 		this.messageLoop();
 	}
 }
@@ -219,28 +349,6 @@ function formatQuestionUnderlines(text: string, choices: string[]) {
 
 	return currentText;
 }
-
-
-const gameInfo = {
-	messages: [{
-		msgType: "staticRound",
-		delay: 1,
-		value: {
-			title: "Round 1",
-			category: "Roman Quotes",
-			roundNumber: 1
-		}
-	}, {
-		msgType: "question",
-		delay: 1000 * 100000,
-		value: {
-			text: "Some question text here. What do you think?",
-			choices: [{ id: 0, text: "Answer One" }, { id: 1, text: "Answer Two" }, { id: 2, text: "Answer Three" }, { id: 3, text: "Answer Four" }],
-			roundNumber: 1
-		}
-	}],
-};
-
 
 function initGame(data: GameData) {
 	// choose random topic and 3 questions

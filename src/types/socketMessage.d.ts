@@ -55,7 +55,42 @@ interface QuestionMessage extends MessageData {
 	answerId: string;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage;
+interface QuestionResultMessageValue {
+	id: string;
+	answerId: string;
+	playerScoreDelta: number;
+	playerScore: number;
+}
+
+interface QuestionResultMessage extends MessageData {
+	msgType: 'questionResult';
+	value: QuestionResultMessageValue;
+}
+
+interface PlayerRankingInfo {
+	playerId: string;
+	playerName: string;
+	playerAvatar: string;
+	playerScore: number;
+}
+
+interface RankingMessageValue {
+	ranking: PlayerRankingInfo[];
+	roundNumber: number;
+}
+
+interface RankingMessage extends MessageData {
+	msgType: 'ranking';
+	value: RankingMessageValue;
+}
+
+interface FinalScoreMessage extends MessageData {
+	msgType: 'finalScore';
+	value: RankingMessageValue;
+}
+
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;

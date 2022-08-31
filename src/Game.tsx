@@ -5,10 +5,31 @@ import StaticRound from './StaticRound';
 import styled from "styled-components";
 import RoundIndicator from "./components/RoundIndicator";
 import Question from "./Question";
+import Ranking from "./Ranking";
 import PropTypes from "prop-types";
 import { getSinglePlayerSocket } from "./service/socketService";
+import fakePlayerService from "./service/fakePlayerService";
 import { initGame } from "./service/singlePlayerService";
-import { isNull } from "lodash";
+import { isNull, first } from "lodash";
+import { useLocation, Link } from "react-router-dom";
+
+const Title = styled.div`
+font-size: ${props => props.theme.h1.fontSize};
+margin-top: 36px;
+text-align: center;
+`;
+
+const FinalScoreTitle = styled.div`
+font-size: ${props => props.theme.h1.fontSize};
+text-align: center;
+margin-top:16px;
+`;
+
+const WinningPlayerContainer = styled.div`
+font-size: ${props => props.theme.h3.fontSize};
+text-align: center;
+`;
+
 
 const IndicatorContainer = styled.div`
 	position:fixed;
@@ -17,10 +38,17 @@ const IndicatorContainer = styled.div`
 	width: 100%;
 `;
 
+const ReturnHomeLink = styled.div`
+position:absolute;
+top:8px;
+right:8px;`;
+
 function Game() {
 	const [msgData, setMsgData] = useState(null);
 	const [score, setScore] = useState(0);
 	const [socket, setSocket] = useState(null);
+	const location = useLocation();
+
 	const numRounds = 3;
 
 	useEffect(() => {
@@ -28,25 +56,30 @@ function Game() {
 			.then((res) => {
 				const game = initGame(res.data);
 
-
 				const socketOnMessage = (event: SocketMessage) => {
 					const data = event.data;
+
+					if (data.msgType === "questionResult") {
+						setScore(data.value.playerScore);
+					}
 					setMsgData(data);
 				};
 				const s: Socket = getSinglePlayerSocket(socketOnMessage);
+				const playerName = (location.state as { playerName: string }).playerName;
 
 				// join the game
 				game.joinGame(s, {
 					msgType: "joinGame",
 					value: {
-						playerName: "SomeName",
+						playerName: playerName,
 						playerId: "someId",
 						playerAvatar: "jon"
 					}
 				});
 
 				// have fake players join the game
-
+				game.joinGame(fakePlayerService.getFakeSocket(), fakePlayerService.getFakePlayerJoinMessage());
+				game.joinGame(fakePlayerService.getFakeSocket(), fakePlayerService.getFakePlayerJoinMessage());
 
 				game.start();
 				setSocket(s);
@@ -74,9 +107,29 @@ function Game() {
 					</IndicatorContainer>
 				</div>);
 		} else if (data.msgType === "question") {
-			return (<div>
+			return (<div key={data.value.id}>
 				<Question delay={data.delay} text={data.value.text} questionId={data.value.id} choices={data.value.choices} score={score.toLocaleString()}
 					onChange={questionAnswered}></Question>
+				<IndicatorContainer>
+					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
+				</IndicatorContainer>
+			</div>);
+		} else if (data.msgType === "ranking") {
+			return (<div>
+				<Title>Ranking</Title>
+				<Ranking ranking={data.value.ranking}></Ranking>
+				<IndicatorContainer>
+					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
+				</IndicatorContainer>
+			</div>);
+		} else if (data.msgType === "finalScore") {
+			return (<div>
+				<ReturnHomeLink>
+					<Link to={"/"}>Home</Link>
+				</ReturnHomeLink>
+				<FinalScoreTitle>Final Score</FinalScoreTitle>
+				<WinningPlayerContainer>{first(data.value.ranking).playerName} Wins!</WinningPlayerContainer>
+				<Ranking ranking={data.value.ranking}></Ranking>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>

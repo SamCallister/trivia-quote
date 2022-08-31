@@ -1,7 +1,7 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import PropTypes from "prop-types";
 import "./AnswerButton.css";
-import styled, { StyledComponent } from "styled-components";
+import styled from "styled-components";
 
 interface PathProps {
 	state: string;

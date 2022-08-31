@@ -1,12 +1,25 @@
-const playerNames = ["Joe"]
+import { uniqueId, random, noop } from "lodash";
 
-function getFakePlayer() {
+const playerNames = ["Joe", "Molly", "George", "Max", "Lex", "Yvette"]
+
+function getFakePlayerJoinMessage(): JoinGameMessage {
     return {
-        playerName: "sup",
-        playerId: "434234",
-        playerAvatar: "jane",
-        socket: { onmessage: (msg: string) => { } }
+        msgType: "joinGame",
+        value: {
+            playerName: getRandomPlayerName(),
+            playerId: uniqueId(),
+            playerAvatar: "bob",
+            isFakePlayer: true
+        }
     };
 }
 
-export default { getFakePlayer };
+function getRandomPlayerName(): string {
+    return `${playerNames[random(0, playerNames.length - 1)]} - bot`;
+}
+
+function getFakeSocket(): Socket {
+    return { onmessage: (data) => { noop(data) } };
+}
+
+export default { getFakePlayerJoinMessage, getFakeSocket };

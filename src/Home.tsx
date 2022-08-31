@@ -66,7 +66,7 @@ function Home() {
   const navigate = useNavigate();
 
   const clickButton = () => {
-    navigate("/singlePlayer");
+    navigate("/singlePlayer", { state: { playerName } });
   };
 
   return (

@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import styled from "styled-components";
-import Snap from 'snapsvg-cjs';
+import { useSpring, animated } from 'react-spring'
+
 
 interface TimeBarProps {
 	delay: number;
@@ -15,32 +16,23 @@ const SvgStyled = styled.svg`
 height:28px;
 width:100%;
 `;
+const widthOfRect = 100;
 
 
 function TimeBar(props: TimeBarProps) {
 
 	const { delay } = props;
-	const svgRef = useRef(null);
+	const styles = useSpring({
+		from: { fill: "#228B22", width: widthOfRect },
+		config: { duration: delay },
+		to: {
+			fill: "#DC143C",
+			width: 0
+		},
+	});
 
-	useEffect(() => {
-		if (svgRef.current) {
-			Snap("#timebar").animate({ width: 0 }, delay);
-			setTimeout(() => {
-				Snap("#timebar").attr({ fill: "#DE591C" });
-			}, delay * 0.35);
-			setTimeout(() => {
-				Snap("#timebar").attr({ fill: "#DC143C" });
-			}, delay * 0.65);
-		}
-
-		// animate the width of the bar
-
-	}, [svgRef]);
-
-	// time ticking down -> interval update until enough time passes
-	// set state -> fill
 	return (<RectContainer><SvgStyled viewBox="0 0 100 7">
-		<rect ref={svgRef} id="timebar" x="0" y="0" height="7" width="100" fill="#228B22"></rect>
+		<animated.rect style={styles} x="0" y="0" height="7" width={widthOfRect} fill="#228B22"></animated.rect>
 	</SvgStyled></RectContainer>);
 }
 
