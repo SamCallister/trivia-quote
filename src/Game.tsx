@@ -47,6 +47,7 @@ function Game() {
 	const [msgData, setMsgData] = useState(null);
 	const [score, setScore] = useState(0);
 	const [socket, setSocket] = useState(null);
+	const [prevQuestion, setPrevQuestion] = useState(null);
 	const location = useLocation();
 
 	const numRounds = 3;
@@ -58,6 +59,10 @@ function Game() {
 
 				const socketOnMessage = (event: SocketMessage) => {
 					const data = event.data;
+
+					if (data.msgType === "question") {
+						setPrevQuestion(data);
+					}
 
 					if (data.msgType === "questionResult") {
 						setScore(data.value.playerScore);
@@ -106,12 +111,11 @@ function Game() {
 						<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
 					</IndicatorContainer>
 				</div>);
-		} else if (data.msgType === "question") {
-			return (<div key={data.value.id}>
-				<Question delay={data.delay} text={data.value.text} questionId={data.value.id} choices={data.value.choices} score={score.toLocaleString()}
-					onChange={questionAnswered}></Question>
+		} else if (data.msgType === "question" || data.msgType === "questionResult") {
+			return (<div key={prevQuestion.value.id}>
+				<Question delay={prevQuestion.delay} text={prevQuestion.value.text} questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
 				<IndicatorContainer>
-					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
+					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>
 			</div>);
 		} else if (data.msgType === "ranking") {

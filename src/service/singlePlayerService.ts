@@ -1,4 +1,4 @@
-import { concat, forEach, keys, random, sampleSize, max, first, fill, repeat, merge, forOwn, get, last, isUndefined, map, pickBy, isEmpty, sortBy, values } from 'lodash';
+import { concat, keys, random, sampleSize, merge, forOwn, get, last, isUndefined, map, pickBy, isEmpty, sortBy, values } from 'lodash';
 
 interface GameData {
 	[category: string]: [{
@@ -43,6 +43,7 @@ const questionsPerRound = 3;
 const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
+const QUESTION_RESULT_DELAY = 1500;
 
 class SinglePlayerGame {
 	gameData: GameData;
@@ -88,7 +89,7 @@ class SinglePlayerGame {
 		// DUMMY message 1 will get made for each player
 		this.actions.unshift({
 			msgType: "questionResult",
-			delay: 0,
+			delay: QUESTION_RESULT_DELAY,
 			value: {
 				id: currentQuestion.id,
 				answerId: currentQuestion.answerId,
@@ -139,7 +140,7 @@ class SinglePlayerGame {
 				msgType: "question",
 				delay: 15 * 1000,
 				value: {
-					text: formatQuestionUnderlines(d.text, d.choices.map((v) => v.text)),
+					text: d.text,
 					id: d.id,
 					choices: d.choices.map((c) => {
 						return merge({}, c, { text: c.text.split(",").join(", ") });
@@ -147,7 +148,7 @@ class SinglePlayerGame {
 					roundNumber: this.currentRound
 				},
 				answerId: d.answerId
-			}
+			};
 		});
 
 		const roundMsg: StaticRoundMessage = {
@@ -182,7 +183,6 @@ class SinglePlayerGame {
 				questionEntry.playerAnswers[playerId] = aiPlayerAnswer;
 			});
 
-
 			this.questionHistory.push(questionEntry);
 		}
 	}
@@ -198,7 +198,7 @@ class SinglePlayerGame {
 				const playerScoreDelta = correct ? pointsPerQuestion : 0;
 				player.playerScore += playerScoreDelta;
 				const questionResultMessage = {
-					delay: 0,
+					delay: QUESTION_RESULT_DELAY,
 					msgType: "questionResult",
 					value: {
 						id: currentQuestion.id,
@@ -328,27 +328,6 @@ class SinglePlayerGame {
 	}
 }
 
-function formatQuestionUnderlines(text: string, choices: string[]) {
-	let currentText = text;
-
-	// reducer that provides the max for each choice (can have multiple words on a given choice)
-	const maxLengthForEachChoice = choices.map((d) => {
-		return d.split(",")
-	}).reduce((a, b) => {
-		// pairwise max
-		return a.map((v, i) => {
-			return max([v, b[i].length]);
-		});
-
-	}, fill(Array(first(choices).split(",").length), 0));
-
-	// 
-	forEach(maxLengthForEachChoice, (v, i) => {
-		currentText = currentText.replace(`{${i}}`, repeat("_", v));
-	})
-
-	return currentText;
-}
 
 function initGame(data: GameData) {
 	// choose random topic and 3 questions

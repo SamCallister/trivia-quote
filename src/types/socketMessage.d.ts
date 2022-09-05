@@ -6,7 +6,7 @@ interface StaticRoundMessageValue {
 
 interface QuestionChoice {
 	text: string;
-	state?: boolean;
+	state?: string;
 	id: string;
 }
 
@@ -107,4 +107,9 @@ interface SocketSendFunc {
 interface Socket {
 	onmessage: OnMessageFunc;
 	send?: SocketSendFunc;
+}
+
+interface QuestionData {
+	text: string;
+	state: string;
 }

@@ -8,28 +8,24 @@ interface PathProps {
 }
 
 interface ButtonClickedFunc {
-	(data: QuestionData): void;
+	(data: QuestionChoice): void;
 }
 
-interface QuestionData {
-	text: string;
-	state: string;
-}
 
 interface AnswerButtonProps {
 	buttonClicked: ButtonClickedFunc;
-	data: QuestionData;
+	data: QuestionChoice;
 }
 
 
 const Path = styled.path<PathProps>`
 ${({ state }) => {
-		if (state == "selected") {
-			return `stroke:#B8860B;
-			stroke-width: 5px;`;
-		} else {
-			return `stroke:black;`;
-		}
+		return {
+			selected: `stroke:#B8860B;
+			stroke-width: 5px;`,
+			incorrect: `stroke:#DC143C;stroke-width: 5px;`,
+			correct: `stroke:#447B30;stroke-width: 5px;`
+		}[state] || "stroke:black;";
 	}};
 `;
 
