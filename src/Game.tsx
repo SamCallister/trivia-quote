@@ -113,7 +113,10 @@ function Game() {
 				</div>);
 		} else if (data.msgType === "question" || data.msgType === "questionResult") {
 			return (<div key={prevQuestion.value.id}>
-				<Question delay={prevQuestion.delay} text={prevQuestion.value.text} questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
+				<Question delay={prevQuestion.delay}
+				text={prevQuestion.value.text}
+				author={prevQuestion.value.author}
+				questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>

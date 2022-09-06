@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import uuid
 
+
 def make_template(quote, answers):
     q = quote
     for i, a in enumerate(answers.split(',')):
@@ -22,21 +23,21 @@ l = [
 
 c = defaultdict(list)
 for d in l:
-	choices = d["choices"].split("|")
-	if len(choices) == 1:
-		choices = choices[0].split(",")
-	
-	final_choices = [{"text": c, "id": str(uuid.uuid4())} for c in choices]
-	answer_choice_id = str(uuid.uuid4())
-	answer_choice = {"text": d["hidden_words"], "id":answer_choice_id}
-	
+    choices = d["choices"].split("|")
+    if len(choices) == 1:
+        choices = choices[0].split(",")
 
-	c[d["category"]].append({
-		"text": d["template"],
-		"id": str(uuid.uuid4()),
-		"choices":final_choices + [answer_choice],
-		"answerId": answer_choice_id
-	})
+    final_choices = [{"text": c, "id": str(uuid.uuid4())} for c in choices]
+    answer_choice_id = str(uuid.uuid4())
+    answer_choice = {"text": d["hidden_words"], "id": answer_choice_id}
+
+    c[d["category"]].append({
+        "text": d["template"],
+        "author": d["author"],
+        "id": str(uuid.uuid4()),
+        "choices": final_choices + [answer_choice],
+        "answerId": answer_choice_id
+    })
 
 Path("../../public/data/single_player_questions.json").write_text(json.dumps(c))
 

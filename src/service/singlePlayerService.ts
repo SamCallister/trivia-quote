@@ -5,6 +5,7 @@ interface GameData {
 		text: string;
 		id: string;
 		answerId: string;
+		author: string;
 		choices: [{
 			text: string;
 			id: string;
@@ -44,7 +45,7 @@ const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
 const QUESTION_RESULT_DELAY = 2 * 1000;
-const QUESTION_DELAY = 10 * 1000;
+const QUESTION_DELAY = 13 * 1000;
 
 class SinglePlayerGame {
 	gameData: GameData;
@@ -146,6 +147,7 @@ class SinglePlayerGame {
 				delay: QUESTION_DELAY,
 				value: {
 					text: d.text,
+					author: d.author,
 					id: d.id,
 					choices: shuffle(d.choices.map((c) => {
 						return merge({}, c, { text: c.text.split(",").join(", ") });

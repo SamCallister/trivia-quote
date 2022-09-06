@@ -20,6 +20,7 @@ const TextOuter = styled.div`
 
 const TextContainer = styled.div`
 	margin-left: 24px;
+	margin-right: 24px;
 	margin-top: 48px;
 	${props => props.theme.normalText};
 `;
@@ -64,6 +65,12 @@ color:#DC143C;
 ${props => props.theme.normalText};
 visibility: ${props => props.show ? "visible" : "hidden"};`;
 
+const AuthorContainer = styled.div`
+font-size:16px;
+text-align:right;
+margin-right:24px;
+margin-top:16px;`;
+
 interface QuestionAnsweredFunc {
 	(data: QuestionChoice, questionId: string): void;
 }
@@ -71,6 +78,7 @@ interface QuestionAnsweredFunc {
 interface QuestionProps {
 	delay: number;
 	text: string;
+	author: string;
 	score: string;
 	questionId: string;
 	correctAnswer: string;
@@ -83,7 +91,7 @@ const SPEED_UP_TIMEBAR = 100;
 
 function Question(props: QuestionProps) {
 
-	const { delay, text, choices, score, onChange, questionId, correctAnswer } = props;
+	const { delay, text, choices, score, onChange, questionId, correctAnswer, author } = props;
 	// modify the question text here
 	// if there are no answers provided then use <ul> with spaces computing max number of spaces
 	// if there are answers provided then use <ul> with spaces around the word?
@@ -175,9 +183,14 @@ function Question(props: QuestionProps) {
 			<ScoreContainer>{score}</ScoreContainer>
 			<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
 			<TextOuter>
-				<TextContainer>
-					{questionText}
-				</TextContainer>
+				<div>
+					<TextContainer>
+						{questionText}
+					</TextContainer>
+					<AuthorContainer>
+						~{author}
+					</AuthorContainer>
+				</div>
 				<AnswersOuterContainer>
 					{stateChoices.map((d, i) => {
 						return (<IndividualAnswerContainer key={i}>

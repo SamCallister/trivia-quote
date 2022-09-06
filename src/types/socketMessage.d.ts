@@ -12,6 +12,7 @@ interface QuestionChoice {
 
 interface QuestionMessageValue {
 	text: string;
+	author: string;
 	id: string;
 	roundNumber: number;
 	choices: Array<QuestionChoice>;
