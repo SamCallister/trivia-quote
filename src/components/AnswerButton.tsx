@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import "./AnswerButton.css";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 interface PathProps {
 	state: string;
@@ -17,6 +17,14 @@ interface AnswerButtonProps {
 	data: QuestionChoice;
 }
 
+const sharedStyle = css`
+text-anchor: start;
+font-family: "News Cycle";
+font-size: 25px;
+fill: black;
+stroke: black;
+stroke-width: 0.1px;
+`;
 
 const Path = styled.path<PathProps>`
 ${({ state }) => {
@@ -24,18 +32,21 @@ ${({ state }) => {
 			selected: `stroke:#B8860B;
 			stroke-width: 5px;`,
 			incorrect: `stroke:#DC143C;stroke-width: 5px;`,
-			correct: `stroke:#447B30;stroke-width: 5px;`
+			correctSelected: `stroke:#447B30;stroke-width: 5px;`,
+			correctNotSelected: `stroke:#447B30;stroke-width: 5px;`
 		}[state] || "stroke:black;";
 	}};
 `;
 
 const Text = styled.text`
-text-anchor: start;
-font-family: "News Cycle";
-font-size: 20px;
-fill: black;
-stroke: black;
-stroke-width: 0.1px;`;
+${sharedStyle}
+`;
+
+const ScoreText = styled.text`
+${sharedStyle}
+stroke:#447B30;
+fill:#447B30;
+`;
 
 const Svg = styled.svg`
 	stroke-width: 0.5px;
@@ -50,9 +61,12 @@ function AnswerButton(props: AnswerButtonProps) {
 		buttonClicked(data);
 	}
 
-	return (<Svg onClick={clickHandler} width="383" height="54" viewBox="0 0 383 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<Text id="svg-button-text" x="25" y="33" stroke="black">{data.text}</Text>
-		<Path state={data.state} id="svg-button-outline" d="M1 39.8219L22.0368 53H360.379L382 39.8219V14.8904L360.379 1H22.6212L1 14.8904V39.8219Z" />
+	return (<Svg onClick={clickHandler} width="383" height="65" viewBox="0 0 383 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<g transform="translate(0,15)">
+			<Text id="svg-button-text" x="25" y="35" stroke="black">{data.text}</Text>
+			<Path state={data.state} id="svg-button-outline" d="M1 39.8219L22.0368 53H360.379L382 39.8219V14.8904L360.379 1H22.6212L1 14.8904V39.8219Z" />
+		</g>
+		{data.state === "correctSelected" && <ScoreText x="332" y="10">+100</ScoreText>}
 	</Svg>);
 }
 

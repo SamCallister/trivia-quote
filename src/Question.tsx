@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import TimeBar from "./components/TimeBar";
 import styled from "styled-components";
 import AnswerButton from "./components/AnswerButton";
-import { merge, partial, isNil, isEmpty, head } from "lodash";
+import { merge, partial, isNil, isEmpty, head, isNull } from "lodash";
 import questionTextService from './service/questionTextService';
 
 
@@ -21,14 +21,14 @@ const TextOuter = styled.div`
 const TextContainer = styled.div`
 	margin-left: 24px;
 	margin-top: 48px;
-	font-size: ${props => props.theme.normalText.fontSize};
+	${props => props.theme.normalText};
 `;
 
 
 const AnswersOuterContainer = styled.div`
 	padding-right: 24px;
 	padding-left: 24px;
-	padding-bottom: 36px;
+	padding-bottom: 48px;
 	display: flex;
 	flex-direction:column;
 `;
@@ -39,7 +39,7 @@ const IndividualAnswerContainer = styled.div`
 const ScoreContainer = styled.div`
 text-align: end;
 padding-right: 8px;
-font-size: ${(props) => props.theme.normalText.fontSize};
+${(props) => props.theme.normalText};
 `;
 
 interface AnswerUnderlineProps {
@@ -53,6 +53,16 @@ line-height:0.85;
 text-indent: ${props => props.isAnswered ? 0 : "-100000000px"};
 text-align: center;
 `;
+
+interface TimeoutMsgContainerProps {
+	show: boolean;
+}
+
+const TimeoutMsgContainer = styled.div<TimeoutMsgContainerProps>`
+text-align:center;
+color:#DC143C;
+${props => props.theme.normalText};
+visibility: ${props => props.show ? "visible" : "hidden"};`;
 
 interface QuestionAnsweredFunc {
 	(data: QuestionChoice, questionId: string): void;
@@ -69,6 +79,7 @@ interface QuestionProps {
 }
 
 const CHAR_WIDTH = 0.6;
+const SPEED_UP_TIMEBAR = 100;
 
 function Question(props: QuestionProps) {
 
@@ -83,10 +94,11 @@ function Question(props: QuestionProps) {
 	const [updatedWithAnswer, setUpdatecWithAnswer] = useState(false);
 
 	const isAnswered = !isNil(correctAnswer);
+	const timeoutOccurred = isNull(choiceIndex) && isAnswered;
 
 	const clickedAnswer = (selectedIndex: number) => {
 		// mark as selected
-		if (isNil(choiceIndex)) {
+		if (isNil(choiceIndex) && !timeoutOccurred) {
 			const newChoices = stateChoices.map((d, i) => {
 				if (selectedIndex === i) {
 					return merge({}, d, { state: "selected" });
@@ -105,13 +117,13 @@ function Question(props: QuestionProps) {
 	const getQuestionText = (text: string, choices: QuestionChoice[], answers: string[], isAnswered: boolean) => {
 
 		const splitArray = questionTextService.formatQuestionUnderlines(text, choices.map((d) => d.text), answers);
-		return splitArray.map((d) => {
+		return splitArray.map((d, i) => {
 			const { text, isAnswer, numLetters } = d;
 
 			if (isAnswer) {
-				return (<AnswerUnderline style={{ width: `${numLetters * CHAR_WIDTH}em` }} isAnswered={isAnswered}>{text}</AnswerUnderline>);
+				return (<AnswerUnderline key={i} style={{ width: `${numLetters * CHAR_WIDTH}em` }} isAnswered={isAnswered}>{text}</AnswerUnderline>);
 			} else {
-				return text;
+				return (<span key={i}>{text}</span>);
 			}
 		});
 	};
@@ -137,13 +149,13 @@ function Question(props: QuestionProps) {
 
 			if (isSelected && isCorrect) {
 				// green it
-				return merge({}, d, { state: "correct" });
+				return merge({}, d, { state: "correctSelected" });
 			} else if (isSelected && !isCorrect) {
 				// red it
 				return merge({}, d, { state: "incorrect" });
 			} else if (!isSelected && isCorrect) {
 				// green it
-				return merge({}, d, { state: "correct" });
+				return merge({}, d, { state: "correctNotSelected" });
 			} else {
 				return d;
 			}
@@ -154,12 +166,14 @@ function Question(props: QuestionProps) {
 		setChoices(updateChoices);
 	}
 
+	// if choice index is null and correctAnswer is here then there was a timeout
 	return (
 		<div>
 			<TimeBarContainer>
-				<TimeBar delay={delay} stopBar={isAnswered}></TimeBar>
+				<TimeBar delay={delay - SPEED_UP_TIMEBAR} stopBar={isAnswered}></TimeBar>
 			</TimeBarContainer>
 			<ScoreContainer>{score}</ScoreContainer>
+			<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
 			<TextOuter>
 				<TextContainer>
 					{questionText}
@@ -167,7 +181,8 @@ function Question(props: QuestionProps) {
 				<AnswersOuterContainer>
 					{stateChoices.map((d, i) => {
 						return (<IndividualAnswerContainer key={i}>
-							<AnswerButton data={d} buttonClicked={partial(clickedAnswer, i)}></AnswerButton>
+							<AnswerButton data={d}
+								buttonClicked={partial(clickedAnswer, i)}></AnswerButton>
 						</IndividualAnswerContainer>);
 					})}
 				</AnswersOuterContainer>

@@ -99,7 +99,7 @@ function Game() {
 			value: { answerId: choice.id, questionId }
 		})
 	};
-
+	
 	const getElements = (data: SocketMessagesUnion) => {
 		if (isNull(data)) {
 			return (<div>Loading...</div>)

@@ -1,4 +1,4 @@
-import { concat, keys, random, sampleSize, merge, forOwn, get, last, isUndefined, map, pickBy, isEmpty, sortBy, values } from 'lodash';
+import { concat, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle } from 'lodash';
 
 interface GameData {
 	[category: string]: [{
@@ -43,7 +43,8 @@ const questionsPerRound = 3;
 const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
-const QUESTION_RESULT_DELAY = 1500;
+const QUESTION_RESULT_DELAY = 2 * 1000;
+const QUESTION_DELAY = 10 * 1000;
 
 class SinglePlayerGame {
 	gameData: GameData;
@@ -67,9 +68,13 @@ class SinglePlayerGame {
 		this.questionHistory = [];
 	}
 
+	answerMatchesCurrentMsgQuestion(questionId: string): boolean {
+		return this.currentMessage && this.currentMessage.msgType === "question" && this.currentMessage.value.id === questionId;
+	}
+
 	checkAnswer(questionId: string, answerId: string, playerId: string) {
 		// do we match the current question and have not already answered? if not ignore
-		if (this.currentMessage && questionId === get(this.currentMessage, 'value.id', null)) {
+		if (this.answerMatchesCurrentMsgQuestion(questionId)) {
 			// mark the answer for the player
 			const currentQuestion = last(this.questionHistory);
 			if (isUndefined(currentQuestion.playerAnswers[playerId])) {
@@ -81,6 +86,7 @@ class SinglePlayerGame {
 				// increment the message count so that the time run out message gets ignored
 				this.eventLoopCount += 1;
 				this.evaluateQuestionResult(currentQuestion);
+				this.messageLoop();
 			}
 		}
 	}
@@ -97,7 +103,6 @@ class SinglePlayerGame {
 				playerScore: 0
 			}
 		});
-		this.messageLoop();
 	}
 
 	handleMessage(socketMessage: SocketMessagesUnion, playerId: string) {
@@ -138,13 +143,13 @@ class SinglePlayerGame {
 		const formattedQuestions: QuestionMessage[] = questions.map((d) => {
 			return {
 				msgType: "question",
-				delay: 15 * 1000,
+				delay: QUESTION_DELAY,
 				value: {
 					text: d.text,
 					id: d.id,
-					choices: d.choices.map((c) => {
+					choices: shuffle(d.choices.map((c) => {
 						return merge({}, c, { text: c.text.split(",").join(", ") });
-					}),
+					})),
 					roundNumber: this.currentRound
 				},
 				answerId: d.answerId
@@ -253,7 +258,7 @@ class SinglePlayerGame {
 			delay: 5000,
 			value: {
 				ranking: rankingInfo,
-				roundNumber: this.currentRound
+				roundNumber: this.currentRound + 1
 			}
 		};
 		this.actions.push(finalScoreMessage);
