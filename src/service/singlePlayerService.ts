@@ -45,7 +45,7 @@ const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
 const QUESTION_RESULT_DELAY = 2 * 1000;
-const QUESTION_DELAY = 13 * 1000;
+const QUESTION_DELAY = 20 * 1000;
 
 class SinglePlayerGame {
 	gameData: GameData;

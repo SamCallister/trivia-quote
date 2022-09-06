@@ -69,7 +69,8 @@ const AuthorContainer = styled.div`
 font-size:16px;
 text-align:right;
 margin-right:24px;
-margin-top:16px;`;
+margin-top:16px;
+color: black;`;
 
 interface QuestionAnsweredFunc {
 	(data: QuestionChoice, questionId: string): void;
