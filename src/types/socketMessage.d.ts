@@ -1,3 +1,16 @@
+interface GameData {
+	[category: string]: [{
+		text: string;
+		id: string;
+		answerId: string;
+		author: string;
+		choices: [{
+			text: string;
+			id: string;
+		}];
+	}]
+}
+
 interface StaticRoundMessageValue {
 	title: string;
 	category: string;

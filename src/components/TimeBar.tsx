@@ -37,7 +37,7 @@ function TimeBar(props: TimeBarProps) {
 		api.pause();
 	}
 
-	return (<RectContainer><SvgStyled viewBox="0 0 100 7">
+	return (<RectContainer><SvgStyled viewBox="0 0 100 7" preserveAspectRatio="none">
 		<animated.rect style={styles} x="0" y="0" height="7" width={widthOfRect} fill="#228B22"></animated.rect>
 	</SvgStyled></RectContainer>);
 }

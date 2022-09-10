@@ -34,14 +34,19 @@ text-align: center;
 const IndicatorContainer = styled.div`
 	position:fixed;
 	bottom:0;
-	left:0;
 	width: 100%;
+	${props => props.theme.appContainerStyles}
 `;
+
+const GameContainer = styled.div`
+	${props => props.theme.appContainerStyles}
+	position: relative;
+`
 
 const ReturnHomeLink = styled.div`
 position:absolute;
-top:8px;
-right:8px;`;
+top:-10px;
+right:10px;`;
 
 function Game() {
 	const [msgData, setMsgData] = useState(null);
@@ -99,10 +104,10 @@ function Game() {
 			value: { answerId: choice.id, questionId }
 		})
 	};
-	
+
 	const getElements = (data: SocketMessagesUnion) => {
 		if (isNull(data)) {
-			return (<div>Loading...</div>)
+			return (<Title>Loading...</Title>);
 		} else if (data.msgType === "staticRound") {
 			return (
 				<div>
@@ -114,9 +119,9 @@ function Game() {
 		} else if (data.msgType === "question" || data.msgType === "questionResult") {
 			return (<div key={prevQuestion.value.id}>
 				<Question delay={prevQuestion.delay}
-				text={prevQuestion.value.text}
-				author={prevQuestion.value.author}
-				questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
+					text={prevQuestion.value.text}
+					author={prevQuestion.value.author}
+					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>
@@ -144,7 +149,7 @@ function Game() {
 		}
 	};
 
-	return (<div>{getElements(msgData)}</div>);
+	return (<GameContainer>{getElements(msgData)}</GameContainer>);
 }
 
 Game.propTypes = { socket: PropTypes.object };

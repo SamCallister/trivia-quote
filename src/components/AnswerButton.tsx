@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import "./AnswerButton.css";
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 
 interface PathProps {
 	state: string;
@@ -17,15 +17,6 @@ interface AnswerButtonProps {
 	data: QuestionChoice;
 }
 
-const sharedStyle = css`
-text-anchor: start;
-font-family: "News Cycle";
-font-size: 25px;
-fill: black;
-stroke: black;
-stroke-width: 0.1px;
-`;
-
 const Path = styled.path<PathProps>`
 ${({ state }) => {
 		return {
@@ -38,19 +29,16 @@ ${({ state }) => {
 	}};
 `;
 
-const Text = styled.text`
-${sharedStyle}
-`;
 
-const ScoreText = styled.text`
-${sharedStyle}
-stroke:#447B30;
-fill:#447B30;
-`;
 
 const Svg = styled.svg`
 	stroke-width: 0.5px;
 	width: 100%;
+`;
+
+const AnswerText = styled.div`
+	cursor:default;
+	${props => props.theme.normalText};
 `;
 
 
@@ -62,11 +50,9 @@ function AnswerButton(props: AnswerButtonProps) {
 	}
 
 	return (<Svg onClick={clickHandler} width="383" height="65" viewBox="0 0 383 65" fill="none" xmlns="http://www.w3.org/2000/svg">
-		<g transform="translate(0,15)">
-			<Text id="svg-button-text" x="25" y="35" stroke="black">{data.text}</Text>
-			<Path state={data.state} id="svg-button-outline" d="M1 39.8219L22.0368 53H360.379L382 39.8219V14.8904L360.379 1H22.6212L1 14.8904V39.8219Z" />
-		</g>
-		{data.state === "correctSelected" && <ScoreText x="332" y="10">+100</ScoreText>}
+		<Path state={data.state} id="svg-button-outline" d="M1 39.8219L22.0368 53H360.379L382 39.8219V14.8904L360.379 1H22.6212L1 14.8904V39.8219Z" />
+		<foreignObject x="25" y="14" width="383" height="30"><AnswerText>
+			{data.text}</AnswerText></foreignObject>
 	</Svg>);
 }
 

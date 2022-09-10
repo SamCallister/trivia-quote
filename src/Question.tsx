@@ -29,7 +29,7 @@ const TextContainer = styled.div`
 const AnswersOuterContainer = styled.div`
 	padding-right: 24px;
 	padding-left: 24px;
-	padding-bottom: 48px;
+	padding-bottom: 64px;
 	display: flex;
 	flex-direction:column;
 `;
@@ -41,6 +41,24 @@ const ScoreContainer = styled.div`
 text-align: end;
 padding-right: 8px;
 ${(props) => props.theme.normalText};
+`;
+
+const ScoreUpdateContainer = styled.div`
+${(props) => props.theme.normalText};
+display: flex;
+justify-content: center;
+position: relative;
+`;
+
+interface ShowUpdateProps {
+	showUpdate: boolean;
+}
+
+const ScoreUpdate = styled.span<ShowUpdateProps>`
+	color: #447B30;
+	visibility: ${props => props.showUpdate ? "visible" : "hidden"};
+	position: absolute;
+	right: 8px;
 `;
 
 interface AnswerUnderlineProps {
@@ -59,11 +77,11 @@ interface TimeoutMsgContainerProps {
 	show: boolean;
 }
 
-const TimeoutMsgContainer = styled.div<TimeoutMsgContainerProps>`
-text-align:center;
+const TimeoutMsgContainer = styled.span<TimeoutMsgContainerProps>`
 color:#DC143C;
 ${props => props.theme.normalText};
-visibility: ${props => props.show ? "visible" : "hidden"};`;
+visibility: ${props => props.show ? "visible" : "hidden"};
+`;
 
 const AuthorContainer = styled.div`
 font-size:16px;
@@ -101,6 +119,7 @@ function Question(props: QuestionProps) {
 	const [choiceIndex, setChoiceIndex] = useState(null);
 	const [stateChoices, setChoices] = useState(choices);
 	const [updatedWithAnswer, setUpdatecWithAnswer] = useState(false);
+	const [gotAnswerCorrect, setAnswerCorrect] = useState(false);
 
 	const isAnswered = !isNil(correctAnswer);
 	const timeoutOccurred = isNull(choiceIndex) && isAnswered;
@@ -152,11 +171,13 @@ function Question(props: QuestionProps) {
 	}
 
 	if (isAnswered && !updatedWithAnswer) {
+		let oneIsCorrect = false;
 		const updateChoices = stateChoices.map((d) => {
 			const isCorrect = correctAnswer === d.id;
 			const isSelected = d.state === "selected";
 
 			if (isSelected && isCorrect) {
+				oneIsCorrect = true;
 				// green it
 				return merge({}, d, { state: "correctSelected" });
 			} else if (isSelected && !isCorrect) {
@@ -171,18 +192,23 @@ function Question(props: QuestionProps) {
 
 
 		});
+		setAnswerCorrect(oneIsCorrect);
 		setUpdatecWithAnswer(true);
 		setChoices(updateChoices);
 	}
 
 	// if choice index is null and correctAnswer is here then there was a timeout
+	// {data.state === "correctSelected" && <ScoreText x="332" y="10">+100</ScoreText>} 447B30
 	return (
 		<div>
 			<TimeBarContainer>
 				<TimeBar delay={delay - SPEED_UP_TIMEBAR} stopBar={isAnswered}></TimeBar>
 			</TimeBarContainer>
 			<ScoreContainer>{score}</ScoreContainer>
-			<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
+			<ScoreUpdateContainer>
+				<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
+				<ScoreUpdate showUpdate={gotAnswerCorrect}>+100</ScoreUpdate>
+			</ScoreUpdateContainer>
 			<TextOuter>
 				<div>
 					<TextContainer>

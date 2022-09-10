@@ -1,17 +1,5 @@
 import { concat, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle } from 'lodash';
 
-interface GameData {
-	[category: string]: [{
-		text: string;
-		id: string;
-		answerId: string;
-		author: string;
-		choices: [{
-			text: string;
-			id: string;
-		}];
-	}]
-}
 
 interface Player {
 	playerId: string;
@@ -45,7 +33,9 @@ const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
 const QUESTION_RESULT_DELAY = 2 * 1000;
-const QUESTION_DELAY = 20 * 1000;
+const QUESTION_DELAY = 15 * 1000;
+const ROUND_DELAY = 2 * 1000;
+const RANKING_DELAY = 3 * 1000;
 
 class SinglePlayerGame {
 	gameData: GameData;
@@ -160,7 +150,7 @@ class SinglePlayerGame {
 
 		const roundMsg: StaticRoundMessage = {
 			msgType: "staticRound",
-			delay: 1000,
+			delay: ROUND_DELAY,
 			value: {
 				title: `Round ${this.currentRound}`,
 				category: chosenTopic,
@@ -244,7 +234,7 @@ class SinglePlayerGame {
 
 		const rankingMsg: SocketMessagesUnion = {
 			msgType: "ranking",
-			delay: 3000,
+			delay: RANKING_DELAY,
 			value: {
 				ranking: rankingInfo,
 				roundNumber: this.currentRound
@@ -257,7 +247,7 @@ class SinglePlayerGame {
 		const rankingInfo = this.getRankingInfo();
 		const finalScoreMessage: SocketMessagesUnion = {
 			msgType: "finalScore",
-			delay: 5000,
+			delay: 0,
 			value: {
 				ranking: rankingInfo,
 				roundNumber: this.currentRound + 1

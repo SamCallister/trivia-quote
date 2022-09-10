@@ -2,19 +2,30 @@ import React from "react";
 import { useState } from "react";
 import styled from "styled-components";
 import { ReactComponent as ManHoodie } from "./svg/man_hoodie.svg";
-import { ReactComponent as NamePlate } from "./svg/name_plate.svg";
 import SvgButton from "./components/SvgButton";
 import { useNavigate } from "react-router-dom";
+import NamePlate from "./components/NamePlate";
+import { device } from './service/deviceService';
 
 const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
+  ${props => props.theme.appContainerStyles}
+  margin:auto;
 `;
 
 const Title = styled.div`
   font-family: cursive;
   font-size: 64px;
+
+  @media ${device.mobileS} { 
+    font-size: 48px;
+  }
+
+  @media ${device.mobileM} { 
+    font-size: 64px;
+  }
 `;
 
 const PlayerContainer = styled.div`
@@ -26,6 +37,7 @@ const PlayerContainer = styled.div`
 const PlateContainer = styled.div`
   width: 95%;
   position: relative;
+  margin-bottom: 24px;
 `;
 
 const ButtonContainer = styled.div`
@@ -43,22 +55,9 @@ const LowerContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  height: 300px;
   flex-direction: column;
   display: flex;
   margin-top: 10px;
-`;
-const NameInput = styled.input`
-  position: absolute;
-  margin: auto;
-  text-align: center;
-  left: 0;
-  right: 0;
-  width: 60%;
-  top: 26px;
-  font-size: 36px;
-  background: none;
-  border: none;
 `;
 
 function Home() {
@@ -80,14 +79,13 @@ function Home() {
       </PlayerContainer>
       <LowerContainer>
         <PlateContainer>
-          <NamePlate></NamePlate>
-          <NameInput
-            value={playerName}
-            onChange={(v) => setPlayerName(v.target.value)}
-          ></NameInput>
+          <NamePlate value={playerName} inputChange={(v) => setPlayerName(v)}></NamePlate>
         </PlateContainer>
         <ButtonContainer onClick={clickButton}>
-          <SvgButton>Single Player</SvgButton>
+          <SvgButton>
+            Single Player
+            <foreignObject></foreignObject>
+          </SvgButton>
         </ButtonContainer>
       </LowerContainer>
     </Wrapper>

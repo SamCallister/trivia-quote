@@ -21,6 +21,7 @@ const PlayerContainer = styled.div`
   fill: white;
   stroke: black;
   width: 29%;
+  max-width: 100px;
 `;
 
 
