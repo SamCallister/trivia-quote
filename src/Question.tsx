@@ -5,7 +5,6 @@ import AnswerButton from "./components/AnswerButton";
 import { merge, partial, isNil, isEmpty, head, isNull } from "lodash";
 import questionTextService from './service/questionTextService';
 
-
 const TimeBarContainer = styled.div`
 	height: 28px;
 `;

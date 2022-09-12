@@ -1,11 +1,13 @@
 import React from "react";
 import { useState } from "react";
 import styled from "styled-components";
-import { ReactComponent as ManHoodie } from "./svg/man_hoodie.svg";
+import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
 import SvgButton from "./components/SvgButton";
 import { useNavigate } from "react-router-dom";
 import NamePlate from "./components/NamePlate";
 import { device } from './service/deviceService';
+import { Avatar, avatarIds } from "./components/Avatar";
+import { min, max } from "lodash";
 
 const Wrapper = styled.div`
   display: flex;
@@ -32,6 +34,16 @@ const PlayerContainer = styled.div`
   width: 60%;
   fill: white;
   stroke: black;
+  display: flex;
+`;
+
+interface ArrowContainerProps {
+  show: boolean;
+};
+
+const ArrowContainer = styled.div<ArrowContainerProps>`
+  align-self: center;
+  visibility: ${props => props.show ? "visible" : "hidden"};
 `;
 
 const PlateContainer = styled.div`
@@ -62,20 +74,34 @@ const LowerContainer = styled.div`
 
 function Home() {
   const [playerName, setPlayerName] = useState("Player 1");
+  const [avatarIndex, setAvatarIndex] = useState(0);
   const navigate = useNavigate();
 
   const clickButton = () => {
-    navigate("/singlePlayer", { state: { playerName } });
+    navigate("/singlePlayer", {
+      state: {
+        playerName,
+        playerAvatar: avatarIds[avatarIndex]
+      }
+    });
+  };
+
+  const moveCharIndex = (direction: number) => {
+    const newCharIndex = avatarIndex + direction;
+    const boundedCharIndex = min([max([newCharIndex, 0]), avatarIds.length - 1]);
+    setAvatarIndex(boundedCharIndex);
   };
 
   return (
     <Wrapper>
       <Title>Trivia Quote</Title>
       <PlayerContainer>
+        <ArrowContainer show={avatarIndex > 0}><FaArrowLeft onClick={moveCharIndex.bind(this, -1)}></FaArrowLeft></ArrowContainer>
         <svg viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="48" />
-          <ManHoodie></ManHoodie>
+          <Avatar avatarId={avatarIds[avatarIndex]}></Avatar>
         </svg>
+        <ArrowContainer show={avatarIndex < avatarIds.length - 1}><FaArrowRight onClick={moveCharIndex.bind(this, 1)}></FaArrowRight></ArrowContainer>
       </PlayerContainer>
       <LowerContainer>
         <PlateContainer>
@@ -84,7 +110,6 @@ function Home() {
         <ButtonContainer onClick={clickButton}>
           <SvgButton>
             Single Player
-            <foreignObject></foreignObject>
           </SvgButton>
         </ButtonContainer>
       </LowerContainer>

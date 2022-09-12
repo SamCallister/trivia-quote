@@ -76,6 +76,7 @@ function Game() {
 				};
 				const s: Socket = getSinglePlayerSocket(socketOnMessage);
 				const playerName = (location.state as { playerName: string }).playerName;
+				const playerAvatar = (location.state as { playerAvatar: string }).playerAvatar;
 
 				// join the game
 				game.joinGame(s, {
@@ -83,7 +84,7 @@ function Game() {
 					value: {
 						playerName: playerName,
 						playerId: "someId",
-						playerAvatar: "jon"
+						playerAvatar: playerAvatar
 					}
 				});
 

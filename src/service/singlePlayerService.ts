@@ -28,7 +28,7 @@ interface PlayerToMessage {
 	[playerId: string]: SocketMessagesUnion;
 }
 
-const questionsPerRound = 3;
+const QUESTIONS_PER_ROUND = 3;
 const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
@@ -128,7 +128,7 @@ class SinglePlayerGame {
 	setupRound(chosenTopic: string) {
 		this.currentRound += 1;
 
-		const questions = sampleSize(this.gameData[chosenTopic], questionsPerRound);
+		const questions = sampleSize(this.gameData[chosenTopic], QUESTIONS_PER_ROUND);
 
 		// choose 3 questions
 		const formattedQuestions: QuestionMessage[] = questions.map((d) => {

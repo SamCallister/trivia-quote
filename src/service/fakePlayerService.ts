@@ -1,4 +1,5 @@
-import { uniqueId, random, noop } from "lodash";
+import { uniqueId, random, noop, sample } from "lodash";
+import { avatarIds } from "../components/Avatar";
 
 const playerNames = ["Joe", "Molly", "George", "Max", "Lex", "Yvette"]
 
@@ -8,7 +9,7 @@ function getFakePlayerJoinMessage(): JoinGameMessage {
         value: {
             playerName: getRandomPlayerName(),
             playerId: uniqueId(),
-            playerAvatar: "bob",
+            playerAvatar: sample(avatarIds),
             isFakePlayer: true
         }
     };

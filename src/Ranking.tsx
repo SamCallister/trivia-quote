@@ -1,7 +1,7 @@
 import React from "react";
 import { take } from "lodash";
-import { ReactComponent as ManHoodie } from "./svg/man_hoodie.svg";
 import styled from "styled-components";
+import { Avatar } from "./components/Avatar";
 
 interface RankingProps {
 	ranking: PlayerRankingInfo[]
@@ -23,7 +23,6 @@ const PlayerContainer = styled.div`
   width: 29%;
   max-width: 100px;
 `;
-
 
 const RankContainer = styled.div`
 display:flex;
@@ -49,7 +48,7 @@ function Ranking(props: RankingProps) {
 					<PlayerContainer>
 						<svg viewBox="0 0 100 100">
 							<circle cx="50" cy="50" r="48" />
-							<ManHoodie></ManHoodie>
+							<Avatar avatarId={rankingInfo.playerAvatar}></Avatar>
 						</svg>
 					</PlayerContainer>
 					<div>{rankingInfo.playerName}</div>
