@@ -39,6 +39,6 @@ for d in l:
         "answerId": answer_choice_id
     })
 
-Path("../../public/data/single_player_questions.json").write_text(json.dumps(c))
+Path("../../client/public/data/single_player_questions.json").write_text(json.dumps(c))
 
 # { "Some_topic": [{:text, choices: [{:text, :id}]},
