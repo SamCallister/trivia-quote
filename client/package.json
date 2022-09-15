@@ -29,7 +29,7 @@
     "build": "tsc && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "npx eslint src && tsc"
+    "lint": "npx eslint src/**/*.ts"
   },
   "eslintConfig": {
     "extends": [
@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-typescript": "^7.18.12",
+    "@react-spring/types": "^9.5.4",
     "@types/jest": "^28.1.7",
     "@types/lodash": "^4.14.183",
     "@types/node": "^18.7.17",

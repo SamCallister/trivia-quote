@@ -39,6 +39,6 @@ for d in l:
         "answerId": answer_choice_id
     })
 
-Path("../../client/public/data/single_player_questions.json").write_text(json.dumps(c))
-
-# { "Some_topic": [{:text, choices: [{:text, :id}]},
+p = Path("../../server/public/data/single_player_questions.json")
+p.parent.mkdir(parents=True, exist_ok=True)
+Path("../../server/public/data/single_player_questions.json").write_text(json.dumps(c))
