@@ -28,3 +28,8 @@ client/node_modules
 server/public
 client/build
 client/dist
+dist.zip
+cdk/**/*.js
+cdk/**/*.d.ts
+cdk/cdk.out
+cdk/node_modules

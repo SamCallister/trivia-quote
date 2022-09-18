@@ -33,3 +33,20 @@ Build both server and client into `server/dist`
 ```
 ./scripts/lint_and_build.sh
 ```
+
+## Deployment
+
+CDK code [based off example here](https://github.com/aws-samples/aws-cdk-examples/tree/master/typescript/ec2-instance)
+
+You need to have cdk installed and bootstrapped:
+```
+npm install -g aws-cdk
+cdk bootstrap
+```
+
+Build the cloud formation templates and deploy
+```
+cd cdk
+npm run build
+cdk deploy
+```
