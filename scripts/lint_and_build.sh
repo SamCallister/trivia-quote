@@ -1,14 +1,14 @@
 set -e
 
+./scripts/lint.sh
+
 # build the server out
 cd server
-npm run lint
 npm run build
 cp package.json dist/package.json
 
 # build the client out
 cd ../client
-npm run lint
 npm run build
 
 cd ..

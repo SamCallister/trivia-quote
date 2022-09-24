@@ -7,7 +7,8 @@ import { useNavigate } from "react-router-dom";
 import NamePlate from "./components/NamePlate";
 import { device } from './service/deviceService';
 import { Avatar, avatarIds } from "./components/Avatar";
-import { min, max } from "lodash";
+import { min, max, merge} from "lodash";
+import { useLocalStorage } from "./hooks/localStorage";
 
 const Wrapper = styled.div`
   display: flex;
@@ -31,7 +32,7 @@ const Title = styled.div`
 `;
 
 const PlayerContainer = styled.div`
-  width: 60%;
+  width: 65%;
   fill: white;
   stroke: black;
   display: flex;
@@ -44,6 +45,7 @@ interface ArrowContainerProps {
 const ArrowContainer = styled.div<ArrowContainerProps>`
   align-self: center;
   visibility: ${props => props.show ? "visible" : "hidden"};
+  font-size: 24px;
 `;
 
 const PlateContainer = styled.div`
@@ -73,14 +75,15 @@ const LowerContainer = styled.div`
 `;
 
 function Home() {
-  const [playerName, setPlayerName] = useState("Player 1");
+  const [playerInfo, setPlayerInfo] = useLocalStorage("playerInfo",
+    { playerName: "Player 1" });
   const [avatarIndex, setAvatarIndex] = useState(0);
   const navigate = useNavigate();
 
   const clickButton = () => {
     navigate("/singlePlayer", {
       state: {
-        playerName,
+        playerName: playerInfo.playerName,
         playerAvatar: avatarIds[avatarIndex]
       }
     });
@@ -105,7 +108,9 @@ function Home() {
       </PlayerContainer>
       <LowerContainer>
         <PlateContainer>
-          <NamePlate value={playerName} inputChange={(v) => setPlayerName(v)}></NamePlate>
+          <NamePlate value={playerInfo.playerName} inputChange={(v) => setPlayerInfo(
+            merge({}, playerInfo, { playerName: v })
+          )}></NamePlate>
         </PlateContainer>
         <ButtonContainer onClick={clickButton}>
           <SvgButton>

@@ -1,7 +1,6 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
@@ -127,6 +126,7 @@ export class Ec2CdkStack extends cdk.Stack {
 			`mkdir server`,
 			`cd server`,
 			`unzip ${localPath}`,
+			`npm install pm2 -g`,
 			`npm install`,
 			`npm run start:prod`
 		)

@@ -24,7 +24,6 @@ const TextContainer = styled.div`
 	${props => props.theme.normalText};
 `;
 
-
 const AnswersOuterContainer = styled.div`
 	padding-right: 24px;
 	padding-left: 24px;

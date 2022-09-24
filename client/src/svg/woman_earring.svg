@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg viewBox="0 0 510 1346" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" clip-path="url(#womanEarringClipCircle)">
     <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
-    <title>woman earring</title>
+    <title>gee_me_018</title>
     <desc>Created with Sketch.</desc>
     <defs>
-        <clipPath id="womanEarringClipCircle">
-            <circle r="639" cx="255" cy="673"/>
+		<clipPath id="womanEarringClipCircle">
+			<circle r="639" cx="255" cy="673"/>
         </clipPath>
     </defs>
     <g id="GEE!-ME" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" transform="translate(-130,150) scale(1.5,1.5)">
@@ -63,12 +63,12 @@
                     <path d="M47.001,314.872 C24.9093,314.872 7.0007,296.964 7.0007,274.872 C7.0007,252.781 24.9093,234.872 47.001,234.872 C69.092,234.872 87.001,252.781 87.001,274.872 C87.001,296.964 69.092,314.872 47.001,314.872 Z" id="Path" fill="#E4C1C1" fill-rule="nonzero"></path>
                     <path d="M42.001,187.872 C42.001,110.552 104.681,47.8719 182.001,47.8719 C259.321,47.8719 322.001,110.552 322.001,187.872 L322.001,249.491 C322.001,265.667 319.755,281.765 315.329,297.324 L296.984,361.811 C282.495,412.739 235.974,447.872 183.025,447.872 C131.003,447.872 85.067,413.937 69.778,364.213 L49.721,298.98 C44.603,282.335 42.001,265.019 42.001,247.604 L42.001,187.872 Z" id="Path" fill="#F4D5CC" fill-rule="nonzero"></path>
                     <g id="Group-3" transform="translate(142.000000, 329.873000)">
-                        <mask id="mask-265" fill="white">
-                            <path d="M79.889,0 C79.963,0.99 80,1.99 80,3 L80,23 C80,45.091 62.092,63 40,63 C17.909,63 0,45.091 0,23 L0,3 C0,1.99 0.038,0.99 0.111,0 L79.889,0 Z"></path>
+                        <mask id="mask-2918443" fill="white">
+							<path d="M79.889,0 C79.963,0.99 80,1.99 80,3 L80,23 C80,45.091 62.092,63 40,63 C17.909,63 0,45.091 0,23 L0,3 C0,1.99 0.038,0.99 0.111,0 L79.889,0 Z"></path>
                         </mask>
-                        <path d="M79.889,0 C79.963,0.99 80,1.99 80,3 L80,23 C80,45.091 62.092,63 40,63 C17.909,63 0,45.091 0,23 L0,3 C0,1.99 0.038,0.99 0.111,0 L79.889,0 Z"></path>
-                        <ellipse id="Oval" fill="#FF6C6C" fill-rule="nonzero" mask="url(#mask-265)" transform="translate(42.000000, 67.127000) scale(-1, 1) translate(-42.000000, -67.127000) " cx="42" cy="67.127" rx="34" ry="25"></ellipse>
-                        <rect id="Rectangle" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-265)" transform="translate(41.500000, 11.500000) scale(-1, 1) translate(-41.500000, -11.500000) " x="-4" y="0" width="91" height="23"></rect>
+						<path d="M79.889,0 C79.963,0.99 80,1.99 80,3 L80,23 C80,45.091 62.092,63 40,63 C17.909,63 0,45.091 0,23 L0,3 C0,1.99 0.038,0.99 0.111,0 L79.889,0 Z" fill="#393939"></path>
+                        <ellipse id="Oval" fill="#FF6C6C" fill-rule="nonzero" mask="url(#mask-2918443)" transform="translate(42.000000, 67.127000) scale(-1, 1) translate(-42.000000, -67.127000) " cx="42" cy="67.127" rx="34" ry="25"></ellipse>
+                        <rect id="Rectangle" fill="#FFFFFF" fill-rule="nonzero" mask="url(#mask-2918443)" transform="translate(41.500000, 11.500000) scale(-1, 1) translate(-41.500000, -11.500000) " x="-4" y="0" width="91" height="23"></rect>
                     </g>
                     <circle id="Oval" fill="#F2CACA" fill-rule="nonzero" cx="100.001" cy="299.872" r="30"></circle>
                     <path d="M236.503317,229.34717 L266.503317,232.34817 C269.251027,232.623032 271.701307,230.618393 271.97617,227.870683 C272.251032,225.122973 270.246393,222.672693 267.498683,222.39783 L237.498683,219.39683 C234.750973,219.121968 232.300693,221.126607 232.02583,223.874317 C231.750968,226.622027 233.755607,229.072307 236.503317,229.34717 Z" id="Path" fill="#000000" fill-rule="nonzero"></path>
