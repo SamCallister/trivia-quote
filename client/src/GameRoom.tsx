@@ -7,6 +7,7 @@ import { useSpring, animated } from "react-spring";
 import { Avatar } from "./components/Avatar";
 import SvgButton from "./components/SvgButton";
 import useWebSocket, { ReadyState } from 'react-use-websocket';
+import CountDown from "./components/CountDown";
 
 
 const GameContainer = styled.div`
@@ -72,6 +73,14 @@ const ButtonContainer = styled.div`
   };
 `;
 
+const CountDownContainer = styled.div`
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	font-family: "News Cycle";
+    font-size: 24px;
+`
+
 const ClipboardSpan = styled.span`
 cursor: default;
 `;
@@ -115,9 +124,10 @@ function GameRoom() {
 
 	const getLowerContainerContent = () => {
 		if (gameStarting.starting) {
-			return (<div>
-				the game is starting
-			</div>)
+			return (<CountDownContainer>
+				<div>starting in...</div>
+				<CountDown seconds={gameStarting.countDownSeconds}></CountDown>
+			</CountDownContainer>)
 		} else if (gameRoomInfo.isHost) {
 			return (<ButtonContainer onClick={startGame}>
 				<SvgButton>
