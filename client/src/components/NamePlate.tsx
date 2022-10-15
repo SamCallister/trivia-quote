@@ -21,7 +21,7 @@ const NameInput = styled.input`
   outline: none;
 `;
 
-function SvgButton(props: NamePlateProps) {
+function NamePlate(props: NamePlateProps) {
 	const { value, inputChange } = props;
 
 	return (<svg viewBox="0 0 440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -32,8 +32,8 @@ function SvgButton(props: NamePlateProps) {
 	);
 }
 
-SvgButton.propTypes = {
+NamePlate.propTypes = {
 	children: PropTypes.string,
 };
 
-export default SvgButton;
+export default NamePlate;

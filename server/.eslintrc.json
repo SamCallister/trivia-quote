@@ -6,7 +6,9 @@
     },
     "extends": [
         "eslint:recommended",
-        "prettier"
+        "prettier",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
     ],
     "env": {
         "es2021": true,
@@ -14,5 +16,6 @@
     },
     "rules": {
         "no-console": "error"
-    }
+    },
+    "plugins": ["@typescript-eslint"]
 }

@@ -2,10 +2,10 @@ import React from "react";
 import "./App.css";
 import Home from "./Home";
 import Game from "./Game";
+import GameRoom from "./GameRoom";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { QueryClient, QueryClientProvider } from 'react-query';
-
 
 const theme = {
   fonts: ["News Cycle"],
@@ -31,6 +31,7 @@ function App() {
           <Routes>
             <Route path={currentPath} element={<Home></Home>} />
             <Route path={`${currentPath}/singlePlayer`} element={<Game></Game>}></Route>
+            <Route path={`${currentPath}/multiplayerGame/:id`} element={<GameRoom></GameRoom>}></Route>
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>

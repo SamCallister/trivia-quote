@@ -58,7 +58,8 @@ export class Ec2CdkStack extends cdk.Stack {
 			desiredCapacity: 1,
 			minCapacity: 1,
 			maxCapacity: 1,
-			role
+			role,
+			instanceMonitoring: autoscaling.Monitoring.BASIC
 		});
 
 

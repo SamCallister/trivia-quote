@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 510 1346" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" clip-path="url(#womanEarringClipCircle)">
+<svg viewBox="0 0 510 1346" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >
     <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
     <title>gee_me_018</title>
     <desc>Created with Sketch.</desc>
@@ -8,6 +8,7 @@
 			<circle r="639" cx="255" cy="673"/>
         </clipPath>
     </defs>
+    <g clip-path="url(#womanEarringClipCircle)">
     <g id="GEE!-ME" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" transform="translate(-130,150) scale(1.5,1.5)">
         <g id="gee_me_018" transform="translate(-345.000000, -127.000000)">
             <g transform="translate(345.000000, 127.000000)">
@@ -87,5 +88,6 @@
                 </g>
             </g>
         </g>
+    </g>
     </g>
 </svg>

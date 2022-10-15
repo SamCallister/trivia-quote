@@ -12,12 +12,7 @@ import fakePlayerService from "./service/fakePlayerService";
 import { initGame } from "./service/singlePlayerService";
 import { isNull, first } from "lodash";
 import { useLocation, Link } from "react-router-dom";
-
-const Title = styled.div`
-font-size: ${props => props.theme.h1.fontSize};
-margin-top: 36px;
-text-align: center;
-`;
+import { Title } from './components/Components';
 
 const FinalScoreTitle = styled.div`
 font-size: ${props => props.theme.h1.fontSize};
@@ -41,7 +36,7 @@ const IndicatorContainer = styled.div`
 const GameContainer = styled.div`
 	${props => props.theme.appContainerStyles}
 	position: relative;
-`
+`;
 
 const ReturnHomeLink = styled.div`
 position:absolute;

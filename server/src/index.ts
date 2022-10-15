@@ -2,10 +2,18 @@ import express from 'express';
 import * as dotenv from 'dotenv';
 import * as winston from 'winston';
 import * as expressWinston from 'express-winston';
+import cookieParser from 'cookie-parser';
+import expressWs from 'express-ws';
+import bodyParser from 'body-parser';
+import games from './service/games';
+import constants from './constants';
+import { v4 as uuidv4 } from 'uuid';
+import { merge } from 'lodash';
+
 
 dotenv.config();
 
-const app = express();
+const { app, getWss, applyTo } = expressWs(express());
 const port = process.env.PORT;
 const { combine, timestamp, json } = winston.format;
 const logger = winston.createLogger({
@@ -13,6 +21,21 @@ const logger = winston.createLogger({
 	format: combine(timestamp(), json(), winston.format.errors({ stack: true })),
 	transports: [new winston.transports.Console()],
 });
+app.use(cookieParser());
+app.use(bodyParser.json());
+
+app.use((req, res, next) => {
+	if (!req.cookies[constants.PLAYER_ID_COOKIE_ID]) {
+		res.cookie(
+			constants.PLAYER_ID_COOKIE_ID,
+			uuidv4(),
+			{ maxAge: constants.MAX_COOKIE_AGE }
+		);
+	}
+
+	next();
+});
+
 const router = express.Router();
 
 router.use(expressWinston.logger({
@@ -30,13 +53,42 @@ router.use(expressWinston.logger({
 	ignoreRoute: function () { return false; } // optional: allows to skip some log messages based on request and/or response
 }));
 
+
 router.get('/', (req, res) => {
 	// serve up react app public index.html
 	res.sendFile('public/index.html', { root: __dirname });
 });
 
+router.post("/multiplayer-game", (req, res) => {
+	const roomInfo = games.createNewGame(
+		req.cookies[constants.PLAYER_ID_COOKIE_ID],
+		merge({}, req.body, { isHost: true }));
+
+	res.status(200).send(roomInfo);
+});
+
+router.put("/multiplayer-game/:gameId", (req, res) => {
+	const roomInfo = games.joinGame(
+		req.params.gameId,
+		req.cookies[constants.PLAYER_ID_COOKIE_ID],
+		merge({}, req.body, { isHost: false })
+	);
+
+	res.status(200).send(roomInfo);
+});
+
 // setup static folder serving assets
 router.use(express.static("public"));
+
+// if playerId cookie doesn't exist setone
+router.ws('/ws/:gameId', (ws, req) => {
+	games.addSocketToGame(
+		req.params.gameId,
+		req.cookies[constants.PLAYER_ID_COOKIE_ID],
+		ws
+	);
+
+});
 
 // Now we can tell the app to use our routing code:
 app.use(router);

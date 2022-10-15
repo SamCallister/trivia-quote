@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 576 1345" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  clip-path="url(#manHoodieClipPath)">
+<svg viewBox="0 0 576 1345" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
     <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
     <title>man hoodie</title>
     <desc>Created with Sketch.</desc>
@@ -8,6 +8,7 @@
             <circle r="639" cx="288" cy="672.5"/>
         </clipPath>
     </defs>
+    <g clip-path="url(#manHoodieClipPath)">
     <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"  transform="translate(-130,150) scale(1.5,1.5)">
         <g transform="translate(-312.000000, -128.000000)">
             <g transform="translate(309.000000, 128.000000)">
@@ -83,5 +84,6 @@
                 </g>
             </g>
         </g>
+    </g>
     </g>
 </svg>

@@ -88,6 +88,11 @@ interface PlayerRankingInfo {
 	playerScore: number;
 }
 
+interface PlayerInfo {
+	playerName: string;
+	playerAvatar: string;
+}
+
 interface RankingMessageValue {
 	ranking: PlayerRankingInfo[];
 	roundNumber: number;
@@ -103,8 +108,27 @@ interface FinalScoreMessage extends MessageData {
 	value: RankingMessageValue;
 }
 
+interface GameRoomInfoMessageValue {
+	players: PlayerInfo[];
+	isHost?: boolean;
+	gameId: string;
+}
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage;
+interface GameRoomInfoMessage extends MessageData {
+	msgType: 'gameRoomInfo';
+	value: GameRoomInfoMessageValue;
+}
+
+interface StartGameMessageValue {
+	countDownSeconds: number;
+}
+
+interface StartGameMessage extends MessageData {
+	msgType: "startGame"
+	value: StartGameMessageValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;
