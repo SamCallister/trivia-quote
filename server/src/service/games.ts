@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { values, omit, forOwn, merge } from 'lodash';
 import * as ws from 'ws';
+import gamePlay from './gamePlay';
+import buildGame from './buildGame';
 
 interface PlayerInfo {
 	playerName: string;
@@ -24,6 +26,7 @@ interface CurrentGames {
 
 const GAME_ID_LENGTH = 5;
 const currentGames: CurrentGames = {};
+const COUNT_DOWN_SECONDS = 5;
 
 function makeGameId() {
 	const longId = uuidv4();
@@ -45,6 +48,7 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 			players: [playerInfo],
 			isHost: true
 		},
+		delay: 0,
 		msgType: 'gameRoomInfo'
 	};
 }
@@ -62,15 +66,16 @@ function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): Gam
 			players: values(gameInfo.players).map(p => omit(p, ["socket"])),
 			isHost: false
 		},
-		msgType: 'gameRoomInfo'
+		msgType: 'gameRoomInfo',
+		delay: 0
 	};
 
 	// broadcast out that a new player joined
 	values(gameInfo.players).map((playerValue) => {
 		if (playerValue.socket) {
-			const isHostValue = merge({}, currentGameInfo.value, {isHost: playerValue.isHost});
+			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost });
 			playerValue.socket.send(JSON.stringify(
-				merge({}, currentGameInfo, {value:isHostValue})
+				merge({}, currentGameInfo, { value: isHostValue })
 			));
 		}
 	})
@@ -96,7 +101,7 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 						if (value.socket) {
 							value.socket.send(JSON.stringify({
 								msgType: "startGame",
-								value: { countDownSeconds: 5 }
+								value: { countDownSeconds: COUNT_DOWN_SECONDS }
 							}));
 						}
 					})
@@ -104,6 +109,34 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 					if (playerInfo.socket) {
 						playerInfo.socket.onmessage = null;
 					}
+
+
+
+					// init gamePlay
+					buildGame.buildGame()
+						.then((gameData) => {
+							const newGame = gamePlay.initGame(gameData);
+
+							forOwn(currentGames[gameId].players, (value, playerId) => {
+
+								if (!value.socket) {
+									throw new Error(`null or undefined socket for playerId:${playerId}`);
+								}
+
+								newGame.joinGame(
+									value.socket, {
+										msgType: "joinGame",
+										value: {
+											playerName: value.playerName,
+											playerAvatar: value.playerAvatar,
+											playerId: playerId
+										}
+									})
+							})
+
+							newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
+						});
+
 				}
 			}
 

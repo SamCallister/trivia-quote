@@ -26,9 +26,12 @@ app.use(bodyParser.json());
 
 app.use((req, res, next) => {
 	if (!req.cookies[constants.PLAYER_ID_COOKIE_ID]) {
+		const newPlayerId = uuidv4();
+
+		req.cookies[constants.PLAYER_ID_COOKIE_ID] = newPlayerId;
 		res.cookie(
 			constants.PLAYER_ID_COOKIE_ID,
-			uuidv4(),
+			newPlayerId,
 			{ maxAge: constants.MAX_COOKIE_AGE }
 		);
 	}

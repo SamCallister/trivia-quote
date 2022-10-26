@@ -2,3 +2,4 @@ name: trivia_quote
 dependencies:
   - python=3.9
   - pandas
+  - sqlalchemy

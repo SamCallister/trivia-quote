@@ -8,6 +8,7 @@ import { Avatar } from "./components/Avatar";
 import SvgButton from "./components/SvgButton";
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import CountDown from "./components/CountDown";
+import GameMultiplayer from "./GameMultiplayer";
 
 
 const GameContainer = styled.div`
@@ -93,6 +94,7 @@ function GameRoom() {
 	const location = useLocation();
 	const [gameRoomInfo, setGameRoomInfo] = useState((location.state as GameRoomInfoMessage).value);
 	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
+	const [gameStarted, setGameStarted] = useState(false);
 	// onCopy={() => this.setState({copied: true})} /multiplayer-game/:gameId ${id}
 	const { sendMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(`ws://${window.location.hostname}:${window.location.port}/ws/${id}`);
 
@@ -107,6 +109,10 @@ function GameRoom() {
 					starting: true,
 					countDownSeconds: socketMessage.value.countDownSeconds
 				});
+				// need to transition to another UI
+				// should we just pass the lastJsonMessage and sendMessage down to the component?
+			} else {
+				setGameStarted(true);
 			}
 		}
 
@@ -128,7 +134,7 @@ function GameRoom() {
 				<div>starting in...</div>
 				<CountDown seconds={gameStarting.countDownSeconds}></CountDown>
 			</CountDownContainer>)
-		} else if (gameRoomInfo.isHost) {
+		} else if (gameRoomInfo.isHost && readyState) {
 			return (<ButtonContainer onClick={startGame}>
 				<SvgButton>
 					Start Game
@@ -137,41 +143,56 @@ function GameRoom() {
 		}
 	};
 
-	return (<GameContainer>
-		<Title>Room Code</Title>
+	const send = (msg:SocketMessagesUnion) => {
+		sendMessage(JSON.stringify(msg));
+	};
 
-		<RoomCode>{id}<CopyToClipboard text={id}
-			onCopy={() => api.start({
-				to: [
-					{ opacity: 1 },
-					{ opacity: 0 }
-				],
-				from: { opacity: 0 },
-				config: { duration: 1000 }
-			})}>
-			<ClipboardSpan>⎘</ClipboardSpan>
-		</CopyToClipboard>
-			<CopiedContainer>
-				<animated.span style={animationProps}>Copied!</animated.span>
-			</CopiedContainer>
-		</RoomCode>
-		<RowsContainer>
-			{gameRoomInfo.players.map((p, i) => {
-				return (<PlayerRow key={i}>
-					<PlayerContainer>
-						<svg viewBox="0 0 100 100">
-							<circle cx="50" cy="50" r="48" />
-							<Avatar avatarId={p.playerAvatar}></Avatar>
-						</svg>
-					</PlayerContainer>
-					{p.playerName}
-				</PlayerRow>);
-			})}
-		</RowsContainer>
-		<LowerContainer>
-			{getLowerContainerContent()}
-		</LowerContainer>
-	</GameContainer>);
+	const getElements = () => {
+		if (gameStarted) {
+			return (<GameMultiplayer currentMessage={(lastJsonMessage as unknown) as SocketMessagesUnion}
+			send={send}></GameMultiplayer>);
+		}
+
+		return (
+
+			<GameContainer>
+				<Title>Room Code</Title>
+
+				<RoomCode>{id}<CopyToClipboard text={id}
+					onCopy={() => api.start({
+						to: [
+							{ opacity: 1 },
+							{ opacity: 0 }
+						],
+						from: { opacity: 0 },
+						config: { duration: 1000 }
+					})}>
+					<ClipboardSpan>⎘</ClipboardSpan>
+				</CopyToClipboard>
+					<CopiedContainer>
+						<animated.span style={animationProps}>Copied!</animated.span>
+					</CopiedContainer>
+				</RoomCode>
+				<RowsContainer>
+					{gameRoomInfo.players.map((p, i) => {
+						return (<PlayerRow key={i}>
+							<PlayerContainer>
+								<svg viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="48" />
+									<Avatar avatarId={p.playerAvatar}></Avatar>
+								</svg>
+							</PlayerContainer>
+							{p.playerName}
+						</PlayerRow>);
+					})}
+				</RowsContainer>
+				<LowerContainer>
+					{getLowerContainerContent()}
+				</LowerContainer>
+			</GameContainer>);
+	}
+
+	return getElements();
 }
 
 export default GameRoom;

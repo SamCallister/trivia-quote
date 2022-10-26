@@ -3,6 +3,7 @@ from collections import defaultdict
 import json
 from pathlib import Path
 import uuid
+from sqlalchemy import create_engine
 
 
 def make_template(quote, answers):
@@ -21,7 +22,7 @@ l = [
     for d in records
 ]
 
-c = defaultdict(list)
+final_list = []
 for d in l:
     choices = d["choices"].split("|")
     if len(choices) == 1:
@@ -31,14 +32,16 @@ for d in l:
     answer_choice_id = str(uuid.uuid4())
     answer_choice = {"text": d["hidden_words"], "id": answer_choice_id}
 
-    c[d["category"]].append({
+    final_list.append({
+        "category": d["category"],
         "text": d["template"],
         "author": d["author"],
         "id": str(uuid.uuid4()),
-        "choices": final_choices + [answer_choice],
+        "choices":  json.dumps(final_choices + [answer_choice]),
         "answerId": answer_choice_id
     })
 
-p = Path("../../server/public/data/single_player_questions.json")
-p.parent.mkdir(parents=True, exist_ok=True)
-Path("../../server/public/data/single_player_questions.json").write_text(json.dumps(c))
+final_df = pd.DataFrame(final_list)
+p = Path("../server/questions.db")
+sql_engine = create_engine(f"sqlite:///{p.absolute()}")
+final_df.reset_index().to_sql('questions', sql_engine, if_exists='replace')
