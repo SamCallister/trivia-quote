@@ -1,6 +1,7 @@
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as cdk from 'aws-cdk-lib';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as targets from 'aws-cdk-lib/aws-route53-targets'
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
@@ -63,22 +64,10 @@ export class Ec2CdkStack extends cdk.Stack {
 		});
 
 
-		const lb = new elbv2.NetworkLoadBalancer(this, 'LB', {
+		const lb = new elbv2.ApplicationLoadBalancer(this, 'LB', {
 			vpc,
 			internetFacing: true,
-			vpcSubnets: { subnets: [vpc.publicSubnets[0]] }
 		});
-
-		// hackworkaround for elasticIP https://github.com/aws/aws-cdk/issues/9696
-		const cfnLoadBalancer: elbv2.CfnLoadBalancer = lb.node.defaultChild as elbv2.CfnLoadBalancer;
-		const subnetMappingProperty: elbv2.CfnLoadBalancer.SubnetMappingProperty = {
-			subnetId: vpc.publicSubnets[0].subnetId,
-			// eipalloc-XXXXYYYYxxxxyyyy
-			allocationId: ELASTIC_IP_ALLOCATION_ID,
-		};
-		cfnLoadBalancer.subnetMappings = [subnetMappingProperty];
-		cfnLoadBalancer.subnets = undefined;
-		// end hackworkaround
 
 		const MY_DOMAIN = "triviaquote.com";
 		const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: MY_DOMAIN })
@@ -90,26 +79,39 @@ export class Ec2CdkStack extends cdk.Stack {
 		});
 
 		//route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(lb));
-		const target = route53.RecordTarget.fromIpAddresses(ELASTIC_IP_ADDRESS);
+		const target = route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(lb));
 
-		new route53.ARecord(this, "triviaQuoteARecord", {
+		const aRecord = new route53.ARecord(this, "triviaQuoteARecord", {
 			zone,
 			target,
 		});
 
-		const listener = lb.addListener("networkLoadBalancerListener", {
+		const cRecord = new route53.CnameRecord(this, "wTriviaQuoteCRecord", {
+			zone,
+			domainName: "triviaquote.com",
+			recordName: "www.triviaquote.com"
+		});
+
+		const listener = lb.addListener("listener", {
 			certificates: [elbv2.ListenerCertificate.fromArn(certificate.certificateArn)],
 			port: 443,
-			protocol: elbv2.Protocol.TLS,
+			protocol: elbv2.ApplicationProtocol.HTTPS
 		});
 
 		listener.addTargets('Target', {
 			port: 80,
-			targets: [asg],
-			protocol: elbv2.Protocol.TCP
+			targets: [asg]
 		});
 
+		listener.connections.allowDefaultPortFromAnyIpv4('Open to the world');
 
+		lb.addRedirect({
+			sourcePort: 80,
+			sourceProtocol: elbv2.ApplicationProtocol.HTTP,
+			targetPort: 443,
+			targetProtocol: elbv2.ApplicationProtocol.HTTPS
+		});
+		
 		// Create an asset that will be used as part of User Data to run on first load
 		const asset = new Asset(this, 'codeZip', { path: path.join(__dirname, '../../dist.zip') });
 
@@ -142,6 +144,5 @@ export class Ec2CdkStack extends cdk.Stack {
 		});
 
 		asset.grantRead(asg.role);
-
 	}
 }

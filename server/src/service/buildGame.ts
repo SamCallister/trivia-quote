@@ -1,12 +1,6 @@
 import { chain, merge } from 'lodash';
 import * as sqlite3 from 'sqlite3';
 
-// "category": d["category"],
-// "text": d["template"],
-// "author": d["author"],
-// "id": str(uuid.uuid4()),
-// "choices":  json.dumps(final_choices + [answer_choice]),
-// "answerId": answer_choice_id
 
 const chooseRandomCategories = `
 with added_random_row_num as (
@@ -38,7 +32,7 @@ function buildGame(): Promise<GameData> {
 	const db = new sqlite3.Database("questions.db", sqlite3.OPEN_READONLY);
 
 	return new Promise((resolve, reject) => {
-		db.all(chooseRandomCategories, (err, rows) => {
+		db.all(chooseRandomCategories, (err:any, rows:any) => {
 
 
 			if (err) {
@@ -51,7 +45,7 @@ function buildGame(): Promise<GameData> {
 				.map((r) => {
 
 					const questionsData = JSON.parse(r.questions);
-					const transformedQuestionsData = questionsData.map((d) => {
+					const transformedQuestionsData = questionsData.map((d:any) => {
 						return merge(
 							d,
 							{ choices: JSON.parse(d.choices) }

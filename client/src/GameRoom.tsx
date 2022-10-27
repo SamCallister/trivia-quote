@@ -86,6 +86,7 @@ const ClipboardSpan = styled.span`
 cursor: default;
 `;
 
+const WEB_SOCKET_PREFIX = process.env.NODE_ENV === 'production' ? 'wss' : 'ws';
 // message types
 // GameRoomInfo -> broadcasts info on players coming and going
 // Game starting -> number of seconds to count down before the game starts
@@ -95,8 +96,7 @@ function GameRoom() {
 	const [gameRoomInfo, setGameRoomInfo] = useState((location.state as GameRoomInfoMessage).value);
 	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
 	const [gameStarted, setGameStarted] = useState(false);
-	// onCopy={() => this.setState({copied: true})} /multiplayer-game/:gameId ${id}
-	const { sendMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(`ws://${window.location.hostname}:${window.location.port}/ws/${id}`);
+	const { sendMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${id}`);
 
 	useEffect(() => {
 		if (lastJsonMessage !== null) {

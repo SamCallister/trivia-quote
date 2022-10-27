@@ -13,6 +13,7 @@ npm run build
 
 cd ..
 cp -R client/build/* server/dist/public
+cp server/questions.db server/dist/questions.db
 
 cd server/dist
 # zip it up

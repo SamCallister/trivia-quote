@@ -24,6 +24,7 @@
     "express-ws": "^5.0.2",
     "lodash": "^4.17.21",
     "node-cache": "^5.1.2",
+    "sqlite3": "^5.1.2",
     "uuid": "^9.0.0",
     "winston": "^3.8.2"
   },
