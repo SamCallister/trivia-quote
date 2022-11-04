@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useSpring, animated } from "react-spring";
@@ -9,7 +9,10 @@ import SvgButton from "./components/SvgButton";
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import CountDown from "./components/CountDown";
 import GameMultiplayer from "./GameMultiplayer";
-
+import { last } from "lodash";
+import axios, { AxiosError } from "axios";
+import { avatarIds } from "./components/Avatar";
+import MissingGameModal from "./components/MissingGameModal";
 
 const GameContainer = styled.div`
 	${props => props.theme.appContainerStyles}
@@ -86,17 +89,26 @@ const ClipboardSpan = styled.span`
 cursor: default;
 `;
 
+const axiosConfig = {
+	headers: {
+		'Content-Type': 'application/json',
+	}
+};
+
 const WEB_SOCKET_PREFIX = process.env.NODE_ENV === 'production' ? 'wss' : 'ws';
 // message types
 // GameRoomInfo -> broadcasts info on players coming and going
 // Game starting -> number of seconds to count down before the game starts
 function GameRoom() {
 	const { id } = useParams();
+
 	const location = useLocation();
-	const [gameRoomInfo, setGameRoomInfo] = useState((location.state as GameRoomInfoMessage).value);
+	const [gameRoomInfo, setGameRoomInfo] = useState(((location.state || {}) as GameRoomInfoMessage).value);
 	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
 	const [gameStarted, setGameStarted] = useState(false);
+	const [missingGameId, setMissingGameId] = useState(null);
 	const { sendMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${id}`);
+	const navigate = useNavigate();
 
 	useEffect(() => {
 		if (lastJsonMessage !== null) {
@@ -118,7 +130,27 @@ function GameRoom() {
 
 	}, [lastJsonMessage])
 
+	useEffect(() => {
+		if (!gameRoomInfo) {
+			const playerInfo = localStorage.getItem("playerInfo") || { playerName: "Player 1", playerAvatar: avatarIds[0] };
+			axios.put(`/multiplayer-game/${id}`, playerInfo, axiosConfig)
+				.then((res) => {
+					const gameRoomInfoResponse = res.data as GameRoomInfoMessage;
+
+					setGameRoomInfo(gameRoomInfoResponse.value);
+				})
+				.catch((err: AxiosError) => {
+					setMissingGameId(id);
+				});
+		}
+	}, []);
+
 	const [animationProps, api] = useSpring(() => {
+		return {
+			from: { opacity: 0 }
+		}
+	});
+	const [animationPropsUrl, apiUrl] = useSpring(() => {
 		return {
 			from: { opacity: 0 }
 		}
@@ -134,23 +166,35 @@ function GameRoom() {
 				<div>starting in...</div>
 				<CountDown seconds={gameStarting.countDownSeconds}></CountDown>
 			</CountDownContainer>)
-		} else if (gameRoomInfo.isHost && readyState) {
-			return (<ButtonContainer onClick={startGame}>
-				<SvgButton>
+		} else if (gameRoomInfo && gameRoomInfo.isHost && readyState) {
+			return (<ButtonContainer>
+				<SvgButton clickButtonHandler={startGame}>
 					Start Game
 				</SvgButton>
 			</ButtonContainer>);
 		}
 	};
 
-	const send = (msg:SocketMessagesUnion) => {
+	const send = (msg: SocketMessagesUnion) => {
 		sendMessage(JSON.stringify(msg));
 	};
 
 	const getElements = () => {
+		if (!gameRoomInfo) {
+			return (<div>
+				{!missingGameId && (<span>loading...</span>)}
+				<MissingGameModal
+					gameId={missingGameId}
+					isOpen={!!missingGameId}
+					onClose={() => {
+						navigate('/');
+					}}></MissingGameModal>
+			</div>);
+		}
+
 		if (gameStarted) {
 			return (<GameMultiplayer currentMessage={(lastJsonMessage as unknown) as SocketMessagesUnion}
-			send={send}></GameMultiplayer>);
+				send={send}></GameMultiplayer>);
 		}
 
 		return (
@@ -173,6 +217,22 @@ function GameRoom() {
 						<animated.span style={animationProps}>Copied!</animated.span>
 					</CopiedContainer>
 				</RoomCode>
+				<RoomCode>Invite link: {document.URL}<CopyToClipboard text={document.URL}
+					onCopy={() => apiUrl.start({
+						to: [
+							{ opacity: 1 },
+							{ opacity: 0 }
+						],
+						from: { opacity: 0 },
+						config: { duration: 1000 }
+					})}>
+					<ClipboardSpan>⎘</ClipboardSpan>
+				</CopyToClipboard>
+					<CopiedContainer>
+						<animated.span style={animationPropsUrl}>Copied!</animated.span>
+					</CopiedContainer>
+				</RoomCode>
+
 				<RowsContainer>
 					{gameRoomInfo.players.map((p, i) => {
 						return (<PlayerRow key={i}>

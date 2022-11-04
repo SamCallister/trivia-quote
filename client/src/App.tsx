@@ -3,7 +3,7 @@ import "./App.css";
 import Home from "./Home";
 import Game from "./Game";
 import GameRoom from "./GameRoom";
-import { MemoryRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { QueryClient, QueryClientProvider } from 'react-query';
 
@@ -22,18 +22,16 @@ const theme = {
 const queryClient = new QueryClient();
 
 function App() {
-  const currentPath = document.location.pathname;
-
   return (
     <ThemeProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
+        <BrowserRouter>
           <Routes>
-            <Route path={currentPath} element={<Home></Home>} />
-            <Route path={`${currentPath}/singlePlayer`} element={<Game></Game>}></Route>
-            <Route path={`${currentPath}/multiplayerGame/:id`} element={<GameRoom></GameRoom>}></Route>
+            <Route path={"/"} element={<Home></Home>} />
+            <Route path={`/singlePlayer`} element={<Game></Game>}></Route>
+            <Route path={`/game/:id`} element={<GameRoom></GameRoom>}></Route>
           </Routes>
-        </MemoryRouter>
+        </BrowserRouter>
       </QueryClientProvider>
     </ThemeProvider>
   );

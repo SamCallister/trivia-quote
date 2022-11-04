@@ -54,9 +54,13 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 }
 
 // what happens when joining a game that is in progress?
-function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): GameRoomInfoMessage {
+function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): GameRoomInfoMessage|null {
 	// deal with missing game?
 	const gameInfo = currentGames[gameId];
+
+	if (!gameInfo) {
+		return null;
+	}
 
 	gameInfo.players[playerId] = playerInfo;
 

@@ -17,16 +17,18 @@ interface GameRoomInfoMessage extends MessageData {
 	value: GameRoomInfo
 }
 
+interface QuestionChoice {
+	text: string;
+	id: string;
+}
+
 interface GameData {
 	[category: string]: [{
 		text: string;
 		id: string;
 		answerId: string;
 		author: string;
-		choices: [{
-			text: string;
-			id: string;
-		}];
+		choices: QuestionChoice[];
 	}]
 }
 

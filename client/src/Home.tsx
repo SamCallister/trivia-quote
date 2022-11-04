@@ -10,8 +10,7 @@ import { Avatar, avatarIds } from "./components/Avatar";
 import { min, max, merge, findIndex } from "lodash";
 import { useLocalStorage } from "./hooks/localStorage";
 import axios from "axios";
-import Modal from 'react-modal';
-import { FaRegWindowClose } from "react-icons/fa";
+import MissingGameModel from './components/MissingGameModal';
 
 const customStyles = {
   content: {
@@ -114,18 +113,19 @@ const LowerContainer = styled.div`
   margin-top: 10px;
 `;
 
-const CloseWindowContainer = styled.div`
-  position: absolute;
-  top: 6px;
-  right: 6px;
-`;
-
 const JoinGameInput = styled.input`
 margin-bottom:16px;
-height: 48px;
+height: 32px;
 font-size: 24px;
-width: 84%;
-text-align: center;`;
+width: 60%;
+text-align: center;
+background-color: transparent;
+border-left:none;
+border-top:none;
+border-right:none;
+border-bottom:1px solid black;
+outline:none;`;
+
 
 function Home() {
   const playerArray = useLocalStorage("playerInfo",
@@ -138,15 +138,9 @@ function Home() {
   const [avatarIndex, setAvatarIndex] = useState(
     findIndex(avatarIds, (avatarId) => avatarId === playerInfo.playerAvatar)
   );
-  const [isJoinGameOpen, setIsJoinGameOpen] = useState(false);
+  const [isMissingGameModalOpen, setMissingGameModalOpen] = useState(false);
   const [joinGameId, setJoinGameId] = useState("");
   const navigate = useNavigate();
-
-  const clickSinglePlayer = () => {
-    navigate("/singlePlayer", {
-      state: playerInfo
-    });
-  };
 
   const clickCreateNewMultiplayer = () => {
 
@@ -159,7 +153,7 @@ function Home() {
     axios.post("/multiplayer-game", playerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
-        navigate(`/multiplayerGame/${gameRoomInfo.value.gameId}`, {
+        navigate(`/game/${gameRoomInfo.value.gameId}`, {
           state: gameRoomInfo,
         });
       });
@@ -168,10 +162,6 @@ function Home() {
 
     // when joining the roomId on the client setup a socket connection
     // with the server and attempt to join the game with a given roomID
-  };
-
-  const clickJoinGame = () => {
-    setIsJoinGameOpen(true);
   };
 
   const clickJoinGameInModal = () => {
@@ -184,9 +174,12 @@ function Home() {
     axios.put(`/multiplayer-game/${joinGameId}`, playerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
-        navigate(`/multiplayerGame/${gameRoomInfo.value.gameId}`, {
+        navigate(`/game/${gameRoomInfo.value.gameId}`, {
           state: gameRoomInfo,
         });
+      })
+      .catch((err) => {
+        setMissingGameModalOpen(true);
       });
   };
 
@@ -214,37 +207,20 @@ function Home() {
             merge({}, playerInfo, { playerName: v })
           )}></NamePlate>
         </PlateContainer>
-        <Modal
-          isOpen={isJoinGameOpen}
-          style={customStyles}>
-          <CloseWindowContainer>
-            <FaRegWindowClose onClick={() => setIsJoinGameOpen(false)}></FaRegWindowClose>
-          </CloseWindowContainer>
-          <ModalHeader>Enter Game Id</ModalHeader>
-          <ModalContent>
-            <JoinGameInput type="text" value={joinGameId} onChange={(e) => setJoinGameId(e.target.value)}></JoinGameInput>
-            <ButtonContainerModal onClick={clickJoinGameInModal}>
-              <SvgButton>
-                Join Game
-              </SvgButton>
-            </ButtonContainerModal>
-          </ModalContent>
-        </Modal>
-        <ButtonContainer onClick={clickSinglePlayer}>
-          <SvgButton>
-            Single Player
+        <ButtonContainer>
+          <SvgButton clickButtonHandler={clickCreateNewMultiplayer}>
+            New Game
           </SvgButton>
         </ButtonContainer>
-        <ButtonContainer onClick={clickCreateNewMultiplayer}>
-          <SvgButton>
-            Create New Multiplayer
-          </SvgButton>
-        </ButtonContainer>
-        <ButtonContainer onClick={clickJoinGame}>
-          <SvgButton>
+        <JoinGameInput type="text" onChange={(e) => setJoinGameId(e.target.value)} value={joinGameId} placeholder="enter game id"></JoinGameInput>
+        <ButtonContainer>
+          <SvgButton clickButtonHandler={clickJoinGameInModal}>
             Join Game
           </SvgButton>
         </ButtonContainer>
+        <MissingGameModel isOpen={isMissingGameModalOpen}
+        gameId={joinGameId}
+        onClose={() => setMissingGameModalOpen(false)}></MissingGameModel>
       </LowerContainer>
     </Wrapper>
   );

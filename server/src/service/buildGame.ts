@@ -28,29 +28,40 @@ GROUP BY category
 ORDER BY RANDOM() DESC
 LIMIT 3`;
 
+interface GameRows {
+	category:string;
+	questions:string;
+}
+
+interface QuestionsData {
+	text: string;
+	author: string;
+	id: string;
+	choices: string;
+	answerId:string;
+}
+
 function buildGame(): Promise<GameData> {
 	const db = new sqlite3.Database("questions.db", sqlite3.OPEN_READONLY);
 
 	return new Promise((resolve, reject) => {
-		db.all(chooseRandomCategories, (err:any, rows:any) => {
-
+		db.all(chooseRandomCategories, (err:Error, rows:GameRows[]) => {
 
 			if (err) {
 				return reject(err);
 			}
 
-
 			// build game data out of rows
 			const gameDataResult = Object.fromEntries(chain(rows)
 				.map((r) => {
 
-					const questionsData = JSON.parse(r.questions);
-					const transformedQuestionsData = questionsData.map((d:any) => {
+					const questionsData = JSON.parse(r.questions) as QuestionsData[];
+					const transformedQuestionsData = questionsData.map((d:QuestionsData) => {
 						return merge(
 							d,
-							{ choices: JSON.parse(d.choices) }
-						)
-					})
+							{ choices: JSON.parse(d.choices) as QuestionChoice[] }
+						);
+					});
 
 					return [r.category, transformedQuestionsData];
 				})

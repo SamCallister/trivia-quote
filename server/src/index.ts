@@ -9,6 +9,7 @@ import games from './service/games';
 import constants from './constants';
 import { v4 as uuidv4 } from 'uuid';
 import { merge } from 'lodash';
+import { STATUS_CODES } from 'http';
 
 
 dotenv.config();
@@ -70,15 +71,21 @@ router.post("/multiplayer-game", (req, res) => {
 	res.status(200).send(roomInfo);
 });
 
-router.put("/multiplayer-game/:gameId", (req, res) => {
+const joinGame = (req:express.Request, res:express.Response) => {
 	const roomInfo = games.joinGame(
 		req.params.gameId,
 		req.cookies[constants.PLAYER_ID_COOKIE_ID],
 		merge({}, req.body, { isHost: false })
 	);
+	
+	if (!roomInfo) {
+		return res.status(404).send();
+	}
 
-	res.status(200).send(roomInfo);
-});
+	return res.status(200).send(roomInfo);
+};
+
+router.put("/multiplayer-game/:gameId", joinGame);
 
 // setup static folder serving assets
 router.use(express.static("public"));
