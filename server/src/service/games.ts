@@ -53,8 +53,32 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 	};
 }
 
+function broadcastGameStateToAll(gameInfo:GameInfo):GameRoomInfoMessage {
+	
+	const currentGameInfo = {
+		value: {
+			gameId:gameInfo.gameId,
+			players: values(gameInfo.players).map(p => omit(p, ["socket"])),
+			isHost: false
+		},
+		msgType: 'gameRoomInfo',
+		delay: 0
+	};
+
+	values(gameInfo.players).map((playerValue) => {
+		if (playerValue.socket) {
+			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost });
+			playerValue.socket.send(JSON.stringify(
+				merge({}, currentGameInfo, { value: isHostValue })
+			));
+		}
+	});
+
+	return currentGameInfo as GameRoomInfoMessage;
+}
+
 // what happens when joining a game that is in progress?
-function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): GameRoomInfoMessage|null {
+function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): GameRoomInfoMessage | null {
 	// deal with missing game?
 	const gameInfo = currentGames[gameId];
 
@@ -64,28 +88,12 @@ function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): Gam
 
 	gameInfo.players[playerId] = playerInfo;
 
-	const currentGameInfo = {
-		value: {
-			gameId,
-			players: values(gameInfo.players).map(p => omit(p, ["socket"])),
-			isHost: false
-		},
-		msgType: 'gameRoomInfo',
-		delay: 0
-	};
+	const currentGameInfo = broadcastGameStateToAll(gameInfo);
 
-	// broadcast out that a new player joined
-	values(gameInfo.players).map((playerValue) => {
-		if (playerValue.socket) {
-			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost });
-			playerValue.socket.send(JSON.stringify(
-				merge({}, currentGameInfo, { value: isHostValue })
-			));
-		}
-	})
+
 	currentGames[gameId] = gameInfo;
 
-	return currentGameInfo as GameRoomInfoMessage;
+	return currentGameInfo;
 }
 
 function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket) {
@@ -95,56 +103,59 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 	const playerInfo = gameInfo.players[playerId];
 	playerInfo.socket = socket;
 
-	if (playerInfo.isHost) {
-		playerInfo.socket.onmessage = (msg) => {
-			if (msg.type == "message") {
-				const parsedMsg = JSON.parse(msg.data as string) as ServerMessageTypeUnion;
-				if (parsedMsg.msgType == "startGame") {
-					// broadcast game start message
-					forOwn(currentGames[gameId].players, (value) => {
-						if (value.socket) {
-							value.socket.send(JSON.stringify({
-								msgType: "startGame",
-								value: { countDownSeconds: COUNT_DOWN_SECONDS }
-							}));
-						}
-					})
-
-					if (playerInfo.socket) {
-						playerInfo.socket.onmessage = null;
+	playerInfo.socket.onmessage = (msg) => {
+		if (msg.type == "message") {
+			const parsedMsg = JSON.parse(msg.data as string) as ServerMessageTypeUnion;
+			if (parsedMsg.msgType === "startGame") {
+				// broadcast game start message
+				forOwn(currentGames[gameId].players, (value) => {
+					if (value.socket) {
+						value.socket.send(JSON.stringify({
+							msgType: "startGame",
+							value: { countDownSeconds: COUNT_DOWN_SECONDS }
+						}));
 					}
+				})
 
-
-
-					// init gamePlay
-					buildGame.buildGame()
-						.then((gameData) => {
-							const newGame = gamePlay.initGame(gameData);
-
-							forOwn(currentGames[gameId].players, (value, playerId) => {
-
-								if (!value.socket) {
-									throw new Error(`null or undefined socket for playerId:${playerId}`);
-								}
-
-								newGame.joinGame(
-									value.socket, {
-										msgType: "joinGame",
-										value: {
-											playerName: value.playerName,
-											playerAvatar: value.playerAvatar,
-											playerId: playerId
-										}
-									})
-							})
-
-							newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
-						});
-
+				if (playerInfo.socket) {
+					playerInfo.socket.onmessage = null;
 				}
-			}
 
+				// init gamePlay
+				buildGame.buildGame()
+					.then((gameData) => {
+						const newGame = gamePlay.initGame(gameData);
+
+						forOwn(currentGames[gameId].players, (value, playerId) => {
+
+							if (!value.socket) {
+								throw new Error(`null or undefined socket for playerId:${playerId}`);
+							}
+
+							newGame.joinGame(
+								value.socket, {
+								msgType: "joinGame",
+								value: {
+									playerName: value.playerName,
+									playerAvatar: value.playerAvatar,
+									playerId: playerId
+								}
+							})
+						})
+
+						newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
+					});
+			} else if (parsedMsg.msgType === "updatePlayerInfo") {
+				// update the playerinfo in the game state
+				const currentPlayerInfo = gameInfo.players[playerId];
+
+				currentPlayerInfo.playerAvatar = parsedMsg.value.playerAvatar;
+				currentPlayerInfo.playerName = parsedMsg.value.playerName;
+
+				broadcastGameStateToAll(currentGames[gameId]);
+			}
 		}
+
 	}
 	currentGames[gameId] = gameInfo;
 }

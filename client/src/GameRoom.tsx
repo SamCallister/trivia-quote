@@ -9,30 +9,67 @@ import SvgButton from "./components/SvgButton";
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import CountDown from "./components/CountDown";
 import GameMultiplayer from "./GameMultiplayer";
-import { last } from "lodash";
+import { debounce } from "lodash";
 import axios, { AxiosError } from "axios";
-import { avatarIds } from "./components/Avatar";
 import MissingGameModal from "./components/MissingGameModal";
+import localPlayerInfo from "./service/localPlayerInfo";
+import { device } from './service/deviceService';
+import Player from "./components/Player";
+import { useDebounce } from "./hooks/debounce";
 
-const GameContainer = styled.div`
+const GameRoomContainer = styled.div`
 	${props => props.theme.appContainerStyles}
 	position: relative;
+	display: flex;
+  	flex-direction: column;
+  	align-items: center;
+  	${props => props.theme.appContainerStyles}
+  	margin:auto;
 `;
 
-const Title = styled.div`
-font-size: ${props => props.theme.h1.fontSize};
+
+const RoomCode = styled.span`
+font-size: 18px;
 text-align: center;
-margin-top:16px;
 `;
 
-const RoomCode = styled.div`
-font-size: ${props => props.theme.h3.fontSize};
+const InviteLink = styled.span`
+font-size: 18px;
+text-align: center;`
+
+const Invite = styled.div`
+font-size: 18px;
+text-align: center;
+margin-bottom:16px;
+position:relative;
+`;
+
+const RoomCodeContainer = styled.div`
+font-size: 18px;
 text-align: center;
 `;
 
 const CopiedContainer = styled.span`
 	position: absolute;
 	margin-left: 6px;
+	margin-top: 5px;
+`;
+
+const LinkCopiedContainer = styled.span`
+	position: absolute;
+
+	@media ${device.mobileS} { 
+		right:-32px;
+		top:-20px;
+  	}
+
+	  @media ${device.tablet} { 
+		top:unset;
+		right:unset;
+		margin-left: 6px;
+		margin-top: 5px;
+  	}
+	
 `;
 
 const PlayerContainer = styled.div`
@@ -52,7 +89,12 @@ const PlayerRow = styled.div`
 
 const RowsContainer = styled.div`
 	margin-top: 16px;
-	min-height: 70vh;
+	width: 100%;
+`;
+
+const UpperContainer = styled.div`
+	min-height: 80vh;
+	width: 100%;	
 `;
 
 const LowerContainer = styled.div`
@@ -87,6 +129,13 @@ const CountDownContainer = styled.div`
 
 const ClipboardSpan = styled.span`
 cursor: default;
+margin-left: 4px;
+font-size: 24px;
+`;
+
+const PlayerSelectContainer = styled.div`
+  width: 70%;
+  margin: auto;
 `;
 
 const axiosConfig = {
@@ -96,6 +145,8 @@ const axiosConfig = {
 };
 
 const WEB_SOCKET_PREFIX = process.env.NODE_ENV === 'production' ? 'wss' : 'ws';
+
+
 // message types
 // GameRoomInfo -> broadcasts info on players coming and going
 // Game starting -> number of seconds to count down before the game starts
@@ -132,7 +183,7 @@ function GameRoom() {
 
 	useEffect(() => {
 		if (!gameRoomInfo) {
-			const playerInfo = localStorage.getItem("playerInfo") || { playerName: "Player 1", playerAvatar: avatarIds[0] };
+			const playerInfo = localPlayerInfo.getPlayerInfo();
 			axios.put(`/multiplayer-game/${id}`, playerInfo, axiosConfig)
 				.then((res) => {
 					const gameRoomInfoResponse = res.data as GameRoomInfoMessage;
@@ -144,6 +195,20 @@ function GameRoom() {
 				});
 		}
 	}, []);
+
+	const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());
+	const debouncedPlayerInfo = useDebounce<PlayerInfo>(playerInfo, 500);
+
+	useEffect(() => {
+		const updatePlayerInfoMsg = {
+			msgType: "updatePlayerInfo",
+			value: {
+				playerName: debouncedPlayerInfo.playerName,
+				playerAvatar: debouncedPlayerInfo.playerAvatar
+			}
+		}
+		sendMessage(JSON.stringify(updatePlayerInfoMsg));
+	}, [debouncedPlayerInfo]);
 
 	const [animationProps, api] = useSpring(() => {
 		return {
@@ -159,6 +224,8 @@ function GameRoom() {
 		const startGame = { msgType: "startGame" };
 		sendMessage(JSON.stringify(startGame));
 	};
+	
+	
 
 	const getLowerContainerContent = () => {
 		if (gameStarting.starting) {
@@ -168,6 +235,38 @@ function GameRoom() {
 			</CountDownContainer>)
 		} else if (gameRoomInfo && gameRoomInfo.isHost && readyState) {
 			return (<ButtonContainer>
+				<RoomCodeContainer>Room Code:
+					<RoomCode>{id}<CopyToClipboard text={id}
+						onCopy={() => api.start({
+							to: [
+								{ opacity: 1 },
+								{ opacity: 0 }
+							],
+							from: { opacity: 0 },
+							config: { duration: 1000 }
+						})}>
+						<ClipboardSpan>⎘</ClipboardSpan>
+					</CopyToClipboard>
+						<CopiedContainer>
+							<animated.span style={animationProps}>Copied!</animated.span>
+						</CopiedContainer>
+					</RoomCode>
+				</RoomCodeContainer>
+				<Invite>invite:<InviteLink>{document.URL}<CopyToClipboard text={document.URL}
+					onCopy={() => apiUrl.start({
+						to: [
+							{ opacity: 1 },
+							{ opacity: 0 }
+						],
+						from: { opacity: 0 },
+						config: { duration: 1000 }
+					})}>
+					<ClipboardSpan>⎘</ClipboardSpan>
+				</CopyToClipboard>
+					<LinkCopiedContainer>
+						<animated.span style={animationPropsUrl}>Copied!</animated.span>
+					</LinkCopiedContainer>
+				</InviteLink></Invite>
 				<SvgButton clickButtonHandler={startGame}>
 					Start Game
 				</SvgButton>
@@ -198,41 +297,9 @@ function GameRoom() {
 		}
 
 		return (
-
-			<GameContainer>
-				<Title>Room Code</Title>
-
-				<RoomCode>{id}<CopyToClipboard text={id}
-					onCopy={() => api.start({
-						to: [
-							{ opacity: 1 },
-							{ opacity: 0 }
-						],
-						from: { opacity: 0 },
-						config: { duration: 1000 }
-					})}>
-					<ClipboardSpan>⎘</ClipboardSpan>
-				</CopyToClipboard>
-					<CopiedContainer>
-						<animated.span style={animationProps}>Copied!</animated.span>
-					</CopiedContainer>
-				</RoomCode>
-				<RoomCode>Invite link: {document.URL}<CopyToClipboard text={document.URL}
-					onCopy={() => apiUrl.start({
-						to: [
-							{ opacity: 1 },
-							{ opacity: 0 }
-						],
-						from: { opacity: 0 },
-						config: { duration: 1000 }
-					})}>
-					<ClipboardSpan>⎘</ClipboardSpan>
-				</CopyToClipboard>
-					<CopiedContainer>
-						<animated.span style={animationPropsUrl}>Copied!</animated.span>
-					</CopiedContainer>
-				</RoomCode>
-
+			<GameRoomContainer>
+				<UpperContainer>
+				<PlayerSelectContainer><Player onChange={setPlayerInfo}></Player></PlayerSelectContainer>
 				<RowsContainer>
 					{gameRoomInfo.players.map((p, i) => {
 						return (<PlayerRow key={i}>
@@ -246,10 +313,11 @@ function GameRoom() {
 						</PlayerRow>);
 					})}
 				</RowsContainer>
+				</UpperContainer>
 				<LowerContainer>
 					{getLowerContainerContent()}
 				</LowerContainer>
-			</GameContainer>);
+			</GameRoomContainer>);
 	}
 
 	return getElements();

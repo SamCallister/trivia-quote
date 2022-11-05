@@ -145,11 +145,21 @@ interface StartGameMessageValue {
 }
 
 interface StartGameMessage extends MessageData {
-	msgType: "startGame"
+	msgType: "startGame";
 	value: StartGameMessageValue;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage;
+interface PlayerUpdateMessageValue {
+	playerName: string;
+	playerAvatar: string;
+}
+
+interface PlayerUpdateMessage extends MessageData {
+	msgType: "updatePlayerInfo";
+	value: PlayerUpdateMessageValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | PlayerUpdateMessage;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;
@@ -174,4 +184,4 @@ interface QuestionData {
 }
 
 
-type ServerMessageTypeUnion = StartGameMessage;
+type ServerMessageTypeUnion = StartGameMessage | PlayerUpdateMessage;
