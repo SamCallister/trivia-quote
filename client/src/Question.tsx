@@ -46,6 +46,7 @@ ${(props) => props.theme.normalText};
 display: flex;
 justify-content: center;
 position: relative;
+text-align: right;
 `;
 
 interface ShowUpdateProps {
@@ -97,6 +98,8 @@ interface QuestionProps {
 	text: string;
 	author: string;
 	score: string;
+	scoreDelta: string;
+	speedScoreDelta: string;
 	questionId: string;
 	correctAnswer: string;
 	choices: QuestionChoice[];
@@ -205,7 +208,7 @@ function Question(props: QuestionProps) {
 			<ScoreContainer>{score}</ScoreContainer>
 			<ScoreUpdateContainer>
 				<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
-				<ScoreUpdate showUpdate={gotAnswerCorrect}>+100</ScoreUpdate>
+				<ScoreUpdate showUpdate={gotAnswerCorrect}><div>+{props.scoreDelta}</div>{props.speedScoreDelta && (<div>🏎️ +{props.speedScoreDelta}</div>)}</ScoreUpdate>
 			</ScoreUpdateContainer>
 			<TextOuter>
 				<div>

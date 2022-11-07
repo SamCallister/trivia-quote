@@ -6,10 +6,9 @@ import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { useSpring, animated } from "react-spring";
 import { Avatar } from "./components/Avatar";
 import SvgButton from "./components/SvgButton";
-import useWebSocket, { ReadyState } from 'react-use-websocket';
+import useWebSocket from 'react-use-websocket';
 import CountDown from "./components/CountDown";
 import GameMultiplayer from "./GameMultiplayer";
-import { debounce } from "lodash";
 import axios, { AxiosError } from "axios";
 import MissingGameModal from "./components/MissingGameModal";
 import localPlayerInfo from "./service/localPlayerInfo";
@@ -158,7 +157,7 @@ function GameRoom() {
 	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
 	const [gameStarted, setGameStarted] = useState(false);
 	const [missingGameId, setMissingGameId] = useState(null);
-	const { sendMessage, lastJsonMessage, readyState, getWebSocket } = useWebSocket(`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${id}`);
+	const { sendMessage, lastJsonMessage, readyState } = useWebSocket(`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${id}`);
 	const navigate = useNavigate();
 
 	useEffect(() => {
@@ -191,6 +190,7 @@ function GameRoom() {
 					setGameRoomInfo(gameRoomInfoResponse.value);
 				})
 				.catch((err: AxiosError) => {
+					console.error("Error joining game", err);
 					setMissingGameId(id);
 				});
 		}
@@ -233,7 +233,7 @@ function GameRoom() {
 				<div>starting in...</div>
 				<CountDown seconds={gameStarting.countDownSeconds}></CountDown>
 			</CountDownContainer>)
-		} else if (gameRoomInfo && gameRoomInfo.isHost && readyState) {
+		} else if (gameRoomInfo && readyState) {
 			return (<ButtonContainer>
 				<RoomCodeContainer>Room Code:
 					<RoomCode>{id}<CopyToClipboard text={id}
@@ -267,9 +267,9 @@ function GameRoom() {
 						<animated.span style={animationPropsUrl}>Copied!</animated.span>
 					</LinkCopiedContainer>
 				</InviteLink></Invite>
-				<SvgButton clickButtonHandler={startGame}>
+				{gameRoomInfo.isHost && (<SvgButton clickButtonHandler={startGame}>
 					Start Game
-				</SvgButton>
+				</SvgButton>)}
 			</ButtonContainer>);
 		}
 	};

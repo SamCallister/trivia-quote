@@ -5,6 +5,7 @@ import { min, max, merge, findIndex } from "lodash";
 import { Avatar, avatarIds } from "./Avatar";
 import NamePlate from "./NamePlate";
 import { useLocalStorage } from "../hooks/localStorage";
+import localPlayerInfo from "../service/localPlayerInfo";
 
 const PlayerContainer = styled.div`
   width: 100%;
@@ -50,20 +51,19 @@ const PlateContainer = styled.div`
   margin-bottom: 24px;
 `;
 
+localPlayerInfo
 function Player(props: PlayerProps) {
 	const playerArray = useLocalStorage("playerInfo",
-		{
-			playerName: "Player 1",
-			playerAvatar: avatarIds[0]
-		});
+		localPlayerInfo.getPlayerInfo());
+
 	const playerInfo = playerArray[0] as PlayerInfo;
 	const setPlayerInfo = playerArray[1];
 	const [avatarIndex, setAvatarIndex] = useState(
 		findIndex(avatarIds, (avatarId) => avatarId === playerInfo.playerAvatar)
 	);
 
-	const setPlayerInfoWrapper = (newPlayerInfo:PlayerInfo) => {
-		if(props.onChange) {
+	const setPlayerInfoWrapper = (newPlayerInfo: PlayerInfo) => {
+		if (props.onChange) {
 			props.onChange(newPlayerInfo);
 		}
 
@@ -76,7 +76,7 @@ function Player(props: PlayerProps) {
 		setPlayerInfoWrapper(merge({}, playerInfo, { playerAvatar: avatarIds[boundedCharIndex] }));
 		setAvatarIndex(boundedCharIndex);
 	};
-	
+
 
 	return (
 		<OuterContainer>

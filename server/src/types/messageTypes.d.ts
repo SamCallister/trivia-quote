@@ -94,6 +94,7 @@ interface QuestionResultMessageValue {
 	id: string;
 	answerId: string;
 	playerScoreDelta: number;
+	playerSpeedScoreDelta: number;
 	playerScore: number;
 }
 

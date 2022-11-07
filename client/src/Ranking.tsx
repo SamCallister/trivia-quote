@@ -20,41 +20,55 @@ const numToSuffix: SuffixMap = {
 const PlayerContainer = styled.div`
   fill: white;
   stroke: black;
-  width: 29%;
+  width: 18%;
   max-width: 100px;
 `;
 
-const RankContainer = styled.div`
-display:flex;
-align-items:center;
-flex-direction:column;`;
 
 const RankNumberContainer = styled.div`
-margin-right: 28%;
-margin-bottom: -13px;
-margin-top:8px;`;
+position:absolute;
+left:-14px;
+top:0px;
+`;
 
-const Score = styled.div`
-font-size: ${props => props.theme.h3.fontSize};`;
+
+const RowsContainer = styled.div`
+	margin-top: 16px;
+	width: 100%;
+`;
+
+const PlayerRow = styled.div`
+	display: flex;
+	align-items:center;
+	margin-left: 36px;
+	position: relative;
+`;
+
+const PlayerNameContainer = styled.span`
+	margin-left: 8px;
+`;
+
 
 function Ranking(props: RankingProps) {
 	const rankingArray: PlayerRankingInfo[] = take(props.ranking, maxNumberToShow);
 
 	return (<div>
 		<div>
-			{rankingArray.map((rankingInfo, i) => {
-				return (<RankContainer key={i}>
-					<RankNumberContainer>{i + 1}{numToSuffix[i + 1]}</RankNumberContainer>
-					<PlayerContainer>
-						<svg viewBox="0 0 100 100">
-							<circle cx="50" cy="50" r="48" />
-							<Avatar avatarId={rankingInfo.playerAvatar}></Avatar>
-						</svg>
-					</PlayerContainer>
-					<div>{rankingInfo.playerName}</div>
-					<Score>{rankingInfo.playerScore}</Score>
-				</RankContainer>);
-			})}
+			<RowsContainer>
+				{rankingArray.map((rankingInfo, i) => {
+					return (<PlayerRow key={i}>
+						<RankNumberContainer>{i + 1}{numToSuffix[i + 1]}</RankNumberContainer>
+						<PlayerContainer>
+							<svg viewBox="0 0 100 100">
+								<circle cx="50" cy="50" r="48" />
+								<Avatar avatarId={rankingInfo.playerAvatar}></Avatar>
+							</svg>
+						</PlayerContainer>
+						<PlayerNameContainer>{rankingInfo.playerName}</PlayerNameContainer>
+					</PlayerRow>);
+				})}
+			</RowsContainer>
+
 		</div>
 	</div>);
 }

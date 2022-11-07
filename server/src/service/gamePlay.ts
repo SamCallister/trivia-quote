@@ -23,17 +23,18 @@ interface QuestionHistory {
 	id: string;
 	answerId: string;
 	playerAnswers: PlayerAnswers;
+	firstAnswerPlayerId?: string;
 }
 
 interface PlayerToMessage {
 	[playerId: string]: SocketMessagesUnion;
 }
 
-const QUESTIONS_PER_ROUND = 3;
+const QUESTIONS_PER_ROUND = 1;
 const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
-const QUESTION_RESULT_DELAY = 2 * 1000;
+const QUESTION_RESULT_DELAY = 2 * 1000 * 1000;
 const QUESTION_DELAY = 15 * 1000;
 const ROUND_DELAY = 2 * 1000;
 const RANKING_DELAY = 3 * 1000;
@@ -74,6 +75,9 @@ class SinglePlayerGame {
 				throw new Error("questionHistory is empty, expected at least one value")
 			} else if (isUndefined(currentQuestion.playerAnswers[playerId])) {
 				currentQuestion.playerAnswers[playerId] = answerId;
+				if (!currentQuestion.firstAnswerPlayerId) {
+					currentQuestion.firstAnswerPlayerId = playerId;
+				}
 
 			}
 
@@ -204,7 +208,10 @@ class SinglePlayerGame {
 
 				const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
 				const playerScoreDelta = correct ? pointsPerQuestion : 0;
-				player.playerScore += playerScoreDelta;
+				const firstPlayerToAnswer = currentQuestion.firstAnswerPlayerId === playerId;
+				const playerSpeedScoreDelta = (correct && firstPlayerToAnswer) ? (0.5 * pointsPerQuestion) : 0;
+				player.playerScore += playerScoreDelta + playerSpeedScoreDelta;
+				
 				const questionResultMessage = {
 					delay: QUESTION_RESULT_DELAY,
 					msgType: "questionResult",
@@ -212,7 +219,8 @@ class SinglePlayerGame {
 						id: currentQuestion.id,
 						answerId: currentQuestion.answerId,
 						playerScoreDelta: playerScoreDelta,
-						playerScore: player.playerScore
+						playerScore: player.playerScore,
+						playerSpeedScoreDelta: playerSpeedScoreDelta
 					}
 				}
 				return { [playerId]: questionResultMessage };

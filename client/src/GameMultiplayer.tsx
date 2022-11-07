@@ -1,17 +1,12 @@
 import React from "react";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import StaticRound from './StaticRound';
 import styled from "styled-components";
 import RoundIndicator from "./components/RoundIndicator";
 import Question from "./Question";
 import Ranking from "./Ranking";
-import PropTypes from "prop-types";
-import { getSinglePlayerSocket } from "./service/socketService";
-import fakePlayerService from "./service/fakePlayerService";
-import { initGame } from "./service/singlePlayerService";
 import { isNull, first } from "lodash";
-import { useLocation, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Title } from './components/Components';
 
 const FinalScoreTitle = styled.div`
@@ -51,7 +46,7 @@ interface GameMultiplayerProps {
 	send: SendFunc
 }
 
-function GameMultiplayer(props:GameMultiplayerProps) {
+function GameMultiplayer(props: GameMultiplayerProps) {
 	const [score, setScore] = useState(0);
 	const [prevQuestion, setPrevQuestion] = useState(null);
 	const [msgData, setMsgData] = useState(null);
@@ -70,7 +65,7 @@ function GameMultiplayer(props:GameMultiplayerProps) {
 
 		setMsgData(props.currentMessage);
 	}, [props.currentMessage]);
-	
+
 	const questionAnswered = (choice: QuestionChoice, questionId: string) => {
 		props.send({
 			msgType: "answer",
@@ -91,11 +86,15 @@ function GameMultiplayer(props:GameMultiplayerProps) {
 					</IndicatorContainer>
 				</div>);
 		} else if (data.msgType === "question" || data.msgType === "questionResult") {
+			const scoreDelta = data.msgType === "questionResult" ? data.value.playerScoreDelta : 0;
+			const speedScoreDelta = data.msgType === "questionResult" ? data.value.playerSpeedScoreDelta : 0;
 			return (<div key={prevQuestion.value.id}>
 				<Question delay={prevQuestion.delay}
 					text={prevQuestion.value.text}
 					author={prevQuestion.value.author}
-					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}></Question>
+					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}
+					scoreDelta={(scoreDelta && scoreDelta.toLocaleString()) || null}
+					speedScoreDelta={(speedScoreDelta && speedScoreDelta.toLocaleString()) || null}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>

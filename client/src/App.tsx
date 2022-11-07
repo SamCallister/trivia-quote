@@ -1,7 +1,6 @@
 import React from "react";
 import "./App.css";
 import Home from "./Home";
-import Game from "./Game";
 import GameRoom from "./GameRoom";
 import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
@@ -28,7 +27,6 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path={"/"} element={<Home></Home>} />
-            <Route path={`/singlePlayer`} element={<Game></Game>}></Route>
             <Route path={`/game/:id`} element={<GameRoom></GameRoom>}></Route>
           </Routes>
         </BrowserRouter>
