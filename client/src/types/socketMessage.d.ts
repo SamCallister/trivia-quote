@@ -129,7 +129,33 @@ interface StartGameMessage extends MessageData {
 	value: StartGameMessageValue;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage;
+interface CategoryInfo {
+	name: string;
+	categoryId: string;
+}
+
+interface UserChoiceRoundMessage extends MessageData {
+	msgType: "userChoiceRound";
+	value: {
+		titleText: string;
+		playerName: string;
+		playerAvatar: string;
+		text: string;
+		isChoosingPlayer: boolean;
+		categories: CategoryInfo[]
+	}
+}
+
+interface UserRoundChoiceValue {
+	categoryId: string;
+}
+
+interface UserRoundChoice extends MessageData {
+	msgType: "userRoundChoice";
+	value: UserRoundChoiceValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | UserChoiceRoundMessage | UserRoundChoice;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;

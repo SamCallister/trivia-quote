@@ -8,6 +8,7 @@ import Ranking from "./Ranking";
 import { isNull, first } from "lodash";
 import { Link } from "react-router-dom";
 import { Title } from './components/Components';
+import UserChooseRound from "./UserChooseRound";
 
 const FinalScoreTitle = styled.div`
 font-size: ${props => props.theme.h1.fontSize};
@@ -42,13 +43,14 @@ interface SendFunc {
 }
 
 interface GameMultiplayerProps {
-	currentMessage: SocketMessagesUnion,
-	send: SendFunc
+	currentMessage: SocketMessagesUnion;
+	send: SendFunc;
 }
 
 function GameMultiplayer(props: GameMultiplayerProps) {
 	const [score, setScore] = useState(0);
 	const [prevQuestion, setPrevQuestion] = useState(null);
+	const [prevUserChoiceRound, setPrevUserChoiceRound] = useState(null);
 	const [msgData, setMsgData] = useState(null);
 
 
@@ -63,6 +65,12 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 			setScore(props.currentMessage.value.playerScore);
 		}
 
+
+		if (props.currentMessage.msgType === "userChoiceRound") {
+			setPrevUserChoiceRound(props.currentMessage);
+		}
+
+
 		setMsgData(props.currentMessage);
 	}, [props.currentMessage]);
 
@@ -73,6 +81,14 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 			value: { answerId: choice.id, questionId }
 		});
 	};
+
+	const choseRound = (categoryId:string) => {
+		props.send({
+			msgType: "userRoundChoice",
+			delay: 0,
+			value: {categoryId:categoryId}
+		});
+	}
 
 	const getElements = (data: SocketMessagesUnion) => {
 		if (isNull(data)) {
@@ -85,6 +101,10 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 						<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
 					</IndicatorContainer>
 				</div>);
+		} else if (data.msgType === "userChoiceRound" || data.msgType === "userRoundChoice") {
+			const chosenCategoryId = data.msgType === "userRoundChoice" ? data.value.categoryId : null;
+
+			return (<UserChooseRound msgData={prevUserChoiceRound} choseRound={choseRound} chosenCategoryId={chosenCategoryId}></UserChooseRound>);
 		} else if (data.msgType === "question" || data.msgType === "questionResult") {
 			const scoreDelta = data.msgType === "questionResult" ? data.value.playerScoreDelta : 0;
 			const speedScoreDelta = data.msgType === "questionResult" ? data.value.playerSpeedScoreDelta : 0;

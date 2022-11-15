@@ -22,14 +22,16 @@ interface QuestionChoice {
 	id: string;
 }
 
-interface GameData {
-	[category: string]: [{
-		text: string;
+interface QuestionGameData {
+	text: string;
 		id: string;
 		answerId: string;
 		author: string;
 		choices: QuestionChoice[];
-	}]
+}
+
+interface GameData {
+	[category: string]: QuestionGameData[]
 }
 
 interface StaticRoundMessageValue {
@@ -54,7 +56,9 @@ interface QuestionMessageValue {
 
 interface MessageData {
 	msgType: string;
-	delay: number
+	delay: number;
+	waitForBeforeSend?: Promise<any>; // eslint-disable-line
+	waitForWithDelay?: Promise<any>; // eslint-disable-line
 }
 
 interface AnswerMessageValue {
@@ -160,7 +164,45 @@ interface PlayerUpdateMessage extends MessageData {
 	value: PlayerUpdateMessageValue;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | PlayerUpdateMessage;
+interface CategoryInfo {
+	name: string;
+	categoryId: string;
+}
+
+interface UserChoiceRoundMessageValue {
+	titleText: string;
+	playerName: string;
+	playerAvatar: string;
+	text: string;
+	isChoosingPlayer: boolean;
+	categories: CategoryInfo[];
+	chosenPlayer: string;
+}
+
+interface UserChoiceRoundMessage extends MessageData {
+	msgType: "userChoiceRound";
+	value: UserChoiceRoundMessageValue;
+}
+
+interface UserRoundChoiceValue {
+	categoryId: string;
+}
+
+interface UserRoundChoice extends MessageData {
+	msgType: "userRoundChoice";
+	value: UserRoundChoiceValue;
+}
+
+interface NewCategoryValue {
+	gameDataPromise: Promise<GameData>
+}
+
+interface NewCategory extends MessageData {
+	msgType: "newCategory";
+	value: NewCategoryValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | PlayerUpdateMessage | UserChoiceRoundMessage | UserRoundChoice | NewCategory;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;

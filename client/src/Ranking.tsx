@@ -1,7 +1,7 @@
 import React from "react";
 import { take } from "lodash";
 import styled from "styled-components";
-import { Avatar } from "./components/Avatar";
+import PlayerView from "./components/PlayerView";
 
 interface RankingProps {
 	ranking: PlayerRankingInfo[]
@@ -59,10 +59,7 @@ function Ranking(props: RankingProps) {
 					return (<PlayerRow key={i}>
 						<RankNumberContainer>{i + 1}{numToSuffix[i + 1]}</RankNumberContainer>
 						<PlayerContainer>
-							<svg viewBox="0 0 100 100">
-								<circle cx="50" cy="50" r="48" />
-								<Avatar avatarId={rankingInfo.playerAvatar}></Avatar>
-							</svg>
+							<PlayerView avatarId={rankingInfo.playerAvatar}></PlayerView>
 						</PlayerContainer>
 						<PlayerNameContainer>{rankingInfo.playerName}</PlayerNameContainer>
 					</PlayerRow>);

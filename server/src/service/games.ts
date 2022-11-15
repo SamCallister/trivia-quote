@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { values, omit, forOwn, merge } from 'lodash';
+import { values, omit, forOwn, merge, keys } from 'lodash';
 import * as ws from 'ws';
 import gamePlay from './gamePlay';
 import buildGame from './buildGame';
+import constants from '../constants';
 
 interface PlayerInfo {
 	playerName: string;
@@ -53,11 +54,11 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 	};
 }
 
-function broadcastGameStateToAll(gameInfo:GameInfo):GameRoomInfoMessage {
-	
+function broadcastGameStateToAll(gameInfo: GameInfo): GameRoomInfoMessage {
+
 	const currentGameInfo = {
 		value: {
-			gameId:gameInfo.gameId,
+			gameId: gameInfo.gameId,
 			players: values(gameInfo.players).map(p => omit(p, ["socket"])),
 			isHost: false
 		},
@@ -122,29 +123,33 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 				}
 
 				// init gamePlay
-				buildGame.buildGame()
-					.then((gameData) => {
-						const newGame = gamePlay.initGame(gameData);
+				buildGame.getRandomCategories(
+					constants.NUM_STARTING_CATEGORIES,
+					constants.QUESTIONS_PER_CATEGORY,
+					[]
+				).then((gameData) => {
+					const newGame = gamePlay.initGame(gameData);
+					newGame.seenCategories.push(...keys(gameData));
 
-						forOwn(currentGames[gameId].players, (value, playerId) => {
+					forOwn(currentGames[gameId].players, (value, playerId) => {
 
-							if (!value.socket) {
-								throw new Error(`null or undefined socket for playerId:${playerId}`);
+						if (!value.socket) {
+							throw new Error(`null or undefined socket for playerId:${playerId}`);
+						}
+
+						newGame.joinGame(
+							value.socket, {
+							msgType: "joinGame",
+							value: {
+								playerName: value.playerName,
+								playerAvatar: value.playerAvatar,
+								playerId: playerId
 							}
-
-							newGame.joinGame(
-								value.socket, {
-								msgType: "joinGame",
-								value: {
-									playerName: value.playerName,
-									playerAvatar: value.playerAvatar,
-									playerId: playerId
-								}
-							})
 						})
+					})
 
-						newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
-					});
+					newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
+				});
 			} else if (parsedMsg.msgType === "updatePlayerInfo") {
 				// update the playerinfo in the game state
 				const currentPlayerInfo = gameInfo.players[playerId];

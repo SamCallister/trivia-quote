@@ -29,8 +29,6 @@ ${({ state }) => {
 	}};
 `;
 
-
-
 const Svg = styled.svg`
 	stroke-width: 0.5px;
 	width: 100%;
