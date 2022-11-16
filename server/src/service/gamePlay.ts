@@ -370,7 +370,7 @@ class SinglePlayerGame {
 		});
 
 		toSend.waitForBeforeSend = waitForPromise;
-		toSend.waitForWithDelay = Promise.all([waitForPromise, delayPromise(toSend.delay)])
+		toSend.waitForWithDelay = waitForPromise.then(() => delayPromise(toSend.delay));
 
 		this.actions.push(toSend);
 	}

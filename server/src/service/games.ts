@@ -102,6 +102,8 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 	const gameInfo = currentGames[gameId];
 
 	const playerInfo = gameInfo.players[playerId];
+	// playerInfo is undefined here?
+
 	playerInfo.socket = socket;
 
 	playerInfo.socket.onmessage = (msg) => {
