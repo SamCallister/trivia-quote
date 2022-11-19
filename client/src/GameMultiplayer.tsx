@@ -9,6 +9,7 @@ import { isNull, first } from "lodash";
 import { Link } from "react-router-dom";
 import { Title } from './components/Components';
 import UserChooseRound from "./UserChooseRound";
+import QuestionModifier from "./QuestionModifier";
 
 const FinalScoreTitle = styled.div`
 font-size: ${props => props.theme.h1.fontSize};
@@ -82,11 +83,11 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 		});
 	};
 
-	const choseRound = (categoryId:string) => {
+	const choseRound = (categoryId: string) => {
 		props.send({
 			msgType: "userRoundChoice",
 			delay: 0,
-			value: {categoryId:categoryId}
+			value: { categoryId: categoryId }
 		});
 	}
 
@@ -113,8 +114,8 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 					text={prevQuestion.value.text}
 					author={prevQuestion.value.author}
 					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}
-					scoreDelta={(scoreDelta && scoreDelta.toLocaleString()) || null}
-					speedScoreDelta={(speedScoreDelta && speedScoreDelta.toLocaleString()) || null}></Question>
+					scoreDelta={scoreDelta}
+					speedScoreDelta={speedScoreDelta}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>
@@ -139,6 +140,9 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>
 			</div>);
+		} else if (data.msgType === "questionModifierMessage") {
+			return (<QuestionModifier titleText={data.value.titleText}
+				text={data.value.text}></QuestionModifier>);
 		}
 	};
 

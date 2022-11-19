@@ -1,4 +1,4 @@
-import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample } from 'lodash';
+import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, identity, get } from 'lodash';
 import * as ws from 'ws';
 import constants from '../constants';
 import buildGame from './buildGame';
@@ -26,6 +26,7 @@ interface QuestionHistory {
 	answerId: string;
 	playerAnswers: PlayerAnswers;
 	firstAnswerPlayerId?: string;
+	questionPointTransforms?: QuestionPointTransforms;
 }
 
 interface PlayerToMessage {
@@ -35,12 +36,14 @@ interface PlayerToMessage {
 const aiProbCorrect = 0.39;
 const pointsPerQuestion = 100;
 const ROUNDS_IN_GAME = 3;
-const QUESTION_RESULT_DELAY = 2 * 1000;
+const QUESTION_RESULT_DELAY = 2.5 * 1000;
 const QUESTION_DELAY = 20 * 1000;
 const ROUND_DELAY = 2 * 1000;
 const RANKING_DELAY = 3 * 1000;
+const QUESTION_MODIFIED_PROBABILITY = 1;
+const QUESTION_MODIFIER_DELAY = 4 * 1000;
 
-function delayPromise(timeToDelay:number) {
+function delayPromise(timeToDelay: number) {
 	return new Promise(resolve => setTimeout(resolve, timeToDelay))
 }
 
@@ -110,7 +113,9 @@ class SinglePlayerGame {
 				constants.QUESTIONS_PER_CATEGORY,
 			).then((questions: QuestionGameData[]) => {
 				this.currentRound += 1;
-				this.actions = concat(this.actions, questions.map(this.formatQuestion.bind(this)));
+				this.actions = concat(this.actions,
+					this.addQuestionModifiers(questions.map(this.formatQuestion.bind(this)))
+				);
 			});
 
 			// send out user round choice to everyone
@@ -135,7 +140,8 @@ class SinglePlayerGame {
 				answerId: currentQuestion.answerId,
 				playerScoreDelta: 0,
 				playerSpeedScoreDelta: 0,
-				playerScore: 0
+				playerScore: 0,
+				questionPointTransforms: currentQuestion.questionPointTransforms
 			}
 		});
 	}
@@ -191,6 +197,102 @@ class SinglePlayerGame {
 		};
 	}
 
+	getRandomModifier(): QuestionModifierMessage {
+		const titleText = "Next question is...";
+		const chosen = sample([{
+			msgType: 'questionModifierMessage',
+			delay: QUESTION_MODIFIER_DELAY,
+			value: {
+				titleText: titleText,
+				text: ["🤑 Double Points! 🤑"],
+				questionPointTransforms: {
+					questionPointTransform: {
+						transformer: (n: number) => n * 2,
+						affectsCorrectAnswer: true
+					},
+					speedPointTransform: {
+						transformer: identity,
+						affectsCorrectAnswer: true
+					}
+				}
+			}
+		}, {
+			msgType: 'questionModifierMessage',
+			delay: QUESTION_MODIFIER_DELAY,
+			value: {
+				titleText: titleText,
+				text: ["🤯 Triple Points! 🤯"],
+				questionPointTransforms: {
+					questionPointTransform: {
+						transformer: (n: number) => n * 3,
+						affectsCorrectAnswer: true
+					},
+					speedPointTransform: {
+						transformer: identity,
+						affectsCorrectAnswer: true
+					}
+				}
+			}
+		}, {
+			msgType: 'questionModifierMessage',
+			delay: QUESTION_MODIFIER_DELAY,
+			value: {
+				titleText: titleText,
+				text: ["🏎️  Triple speed bonus! 🏎️ "],
+				questionPointTransforms: {
+					questionPointTransform: {
+						transformer: identity,
+						affectsCorrectAnswer: true
+					},
+					speedPointTransform: {
+						transformer: (n: number) => n * 3,
+						affectsCorrectAnswer: true
+					}
+				}
+			}
+		}, {
+			msgType: 'questionModifierMessage',
+			delay: QUESTION_MODIFIER_DELAY,
+			value: {
+				titleText: titleText,
+				text: ["💀Negative Points on wrong answer💀"],
+				questionPointTransforms: {
+					questionPointTransform: {
+						transformer: (n: number) => n * -1,
+						affectsCorrectAnswer: false
+					},
+					speedPointTransform: {
+						transformer: identity,
+						affectsCorrectAnswer: true
+					}
+				}
+			}
+		}]);
+
+		if (!chosen) {
+			throw new Error("Failed to choose random modifier");
+		}
+
+		return chosen as QuestionModifierMessage;
+	}
+
+	addQuestionModifiers(questions: QuestionMessage[]) {
+		// some probability that each question is modified
+		// place the modifier messages in the array + put reference to modifier in the question message
+		const messages: SocketMessagesUnion[] = [];
+		questions.forEach((q) => {
+			if (Math.random() < QUESTION_MODIFIED_PROBABILITY) {
+				const modifier = this.getRandomModifier();
+				messages.push(modifier);
+				q.value.questionPointTransforms = modifier.value.questionPointTransforms;
+			}
+
+			messages.push(q);
+		})
+
+		return messages;
+	}
+
 	// builds round, adding messages to action queue
 	setupRound(chosenTopic: string) {
 		this.currentRound += 1;
@@ -210,7 +312,7 @@ class SinglePlayerGame {
 			}
 		};
 
-		this.actions = concat(this.actions, [roundMsg], formattedQuestions);
+		this.actions = concat(this.actions, [roundMsg], this.addQuestionModifiers(formattedQuestions));
 	}
 
 	preSendEffects(msg: SocketMessagesUnion) {
@@ -219,7 +321,8 @@ class SinglePlayerGame {
 			const questionEntry: QuestionHistory = {
 				id: msg.value.id,
 				answerId: msg.answerId,
-				playerAnswers: {}
+				playerAnswers: {},
+				questionPointTransforms: msg.value.questionPointTransforms
 			};
 
 			// all the fake players answer
@@ -236,6 +339,14 @@ class SinglePlayerGame {
 		}
 	}
 
+	questionPointsLogic(correct:boolean, modAffectsCorrect:boolean, modFunc:PointTransformer ,points:number, ):number {
+		if (modAffectsCorrect) {
+			return modFunc(correct ? points:0);
+		} else {
+			return correct ? points : modFunc(points);
+		}
+	}
+
 	buildPlayerToMsg(toSend: SocketMessagesUnion): PlayerToMessage {
 		if (toSend.msgType === "questionResult") {
 			// for each player check the question
@@ -243,14 +354,40 @@ class SinglePlayerGame {
 
 				const currentQuestion = last(this.questionHistory);
 
+				const identityInt = (n: number) => n;
+
 				if (!currentQuestion) {
 					throw new Error("expected currentQuestion to not be null or undefined");
 				}
 
 				const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
-				const playerScoreDelta = correct ? pointsPerQuestion : 0;
+
+				const playerScoreDeltaTransform = get(currentQuestion, 'questionPointTransforms.questionPointTransform.transformer', identityInt) as PointTransformer;
+				const playerScoreAffectsCorrect = get(currentQuestion, 'questionPointTransforms.questionPointTransform.affectsCorrectAnswer', true) as boolean;
+
+				
+				
+				// assumption -> getting it wrong means you always take the effect
+				// on the score. So either 0 it out or make negative
+				const playerScoreDelta = this.questionPointsLogic(
+					correct,
+					playerScoreAffectsCorrect,
+					playerScoreDeltaTransform,
+					pointsPerQuestion
+				);
+				
+
+				const playerSpeedPointTransform = get(currentQuestion, 'questionPointTransforms.speedPointTransform.transformer', identityInt) as PointTransformer;
+				const playerSpeedPointAffectsCorrect = get(currentQuestion, 'questionPointTransforms.speedPointTransform.affectsCorrectAnswer', true) as boolean;
 				const firstPlayerToAnswer = currentQuestion.firstAnswerPlayerId === playerId;
-				const playerSpeedScoreDelta = (correct && firstPlayerToAnswer) ? (0.5 * pointsPerQuestion) : 0;
+
+				const playerSpeedScoreDelta = firstPlayerToAnswer ? this.questionPointsLogic(
+					correct,
+					playerSpeedPointAffectsCorrect,
+					playerSpeedPointTransform,
+					(0.5 * pointsPerQuestion)
+				) : 0;
+
 				player.playerScore += playerScoreDelta + playerSpeedScoreDelta;
 
 				const questionResultMessage = {

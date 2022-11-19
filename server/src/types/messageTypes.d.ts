@@ -52,6 +52,7 @@ interface QuestionMessageValue {
 	id: string;
 	roundNumber: number;
 	choices: Array<QuestionChoice>;
+	questionPointTransforms?:QuestionPointTransforms;
 }
 
 interface MessageData {
@@ -100,6 +101,7 @@ interface QuestionResultMessageValue {
 	playerScoreDelta: number;
 	playerSpeedScoreDelta: number;
 	playerScore: number;
+	questionPointTransforms?: QuestionPointTransforms;
 }
 
 interface QuestionResultMessage extends MessageData {
@@ -202,7 +204,32 @@ interface NewCategory extends MessageData {
 	value: NewCategoryValue;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | PlayerUpdateMessage | UserChoiceRoundMessage | UserRoundChoice | NewCategory;
+interface PointTransformer {
+	(score: number): number;
+}
+
+interface TransformerInfo {
+	transformer: PointTransformer;
+	affectsCorrectAnswer: boolean;
+}
+
+interface QuestionPointTransforms {
+	questionPointTransform:TransformerInfo;
+	speedPointTransform:TransformerInfo;
+}
+
+interface QuestionModifierMessageValue {
+	titleText:string;
+	text:string[];
+	questionPointTransforms:QuestionPointTransforms
+}
+
+interface QuestionModifierMessage extends MessageData {
+	msgType: "questionModifierMessage";
+	value: QuestionModifierMessageValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | PlayerUpdateMessage | UserChoiceRoundMessage | UserRoundChoice | NewCategory | QuestionModifierMessage;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;

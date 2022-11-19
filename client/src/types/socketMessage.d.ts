@@ -155,7 +155,27 @@ interface UserRoundChoice extends MessageData {
 	value: UserRoundChoiceValue;
 }
 
-type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | UserChoiceRoundMessage | UserRoundChoice;
+interface PointTransformer {
+	(score: number): number;
+}
+
+interface QuestionPointTransforms {
+	questionPointTransform:PointTransformer;
+	speedPointTransform:PointTransformer;
+}
+
+interface QuestionModifierMessageValue {
+	titleText:string;
+	text:string[];
+	questionPointTransforms:QuestionPointTransforms
+}
+
+interface QuestionModifierMessage extends MessageData {
+	msgType: "questionModifierMessage";
+	value: QuestionModifierMessageValue;
+}
+
+type SocketMessagesUnion = StaticRoundMessage | QuestionMessage | AnswerMessage | QuestionResultMessage | RankingMessage | FinalScoreMessage | GameRoomInfoMessage | StartGameMessage | UserChoiceRoundMessage | UserRoundChoice | QuestionModifierMessage;
 
 interface SocketMessage {
 	data: SocketMessagesUnion;

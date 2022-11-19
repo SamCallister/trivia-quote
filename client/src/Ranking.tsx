@@ -27,13 +27,13 @@ const PlayerContainer = styled.div`
 
 const RankNumberContainer = styled.div`
 position:absolute;
-left:-14px;
+left:-19px;
 top:0px;
 `;
 
 
 const RowsContainer = styled.div`
-	margin-top: 16px;
+	margin-top: 8px;
 	width: 100%;
 `;
 
@@ -41,13 +41,16 @@ const PlayerRow = styled.div`
 	display: flex;
 	align-items:center;
 	margin-left: 36px;
+	margin-right: 36px;
 	position: relative;
 `;
 
 const PlayerNameContainer = styled.span`
 	margin-left: 8px;
+	display: flex;
+	justify-content: space-between;
+	width: 100%;
 `;
-
 
 function Ranking(props: RankingProps) {
 	const rankingArray: PlayerRankingInfo[] = take(props.ranking, maxNumberToShow);
@@ -61,7 +64,7 @@ function Ranking(props: RankingProps) {
 						<PlayerContainer>
 							<PlayerView avatarId={rankingInfo.playerAvatar}></PlayerView>
 						</PlayerContainer>
-						<PlayerNameContainer>{rankingInfo.playerName}</PlayerNameContainer>
+						<PlayerNameContainer><span>{rankingInfo.playerName}</span><span>{rankingInfo.playerScore.toLocaleString()}</span></PlayerNameContainer>
 					</PlayerRow>);
 				})}
 			</RowsContainer>

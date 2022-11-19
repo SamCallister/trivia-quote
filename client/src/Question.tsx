@@ -51,10 +51,11 @@ text-align: right;
 
 interface ShowUpdateProps {
 	showUpdate: boolean;
+	negative: boolean;
 }
 
 const ScoreUpdate = styled.span<ShowUpdateProps>`
-	color: #447B30;
+	color: ${props => props.negative ? "#DC143C" : "#447B30"};
 	visibility: ${props => props.showUpdate ? "visible" : "hidden"};
 	position: absolute;
 	right: 8px;
@@ -98,8 +99,8 @@ interface QuestionProps {
 	text: string;
 	author: string;
 	score: string;
-	scoreDelta: string;
-	speedScoreDelta: string;
+	scoreDelta: number;
+	speedScoreDelta: number;
 	questionId: string;
 	correctAnswer: string;
 	choices: QuestionChoice[];
@@ -120,7 +121,6 @@ function Question(props: QuestionProps) {
 	const [choiceIndex, setChoiceIndex] = useState(null);
 	const [stateChoices, setChoices] = useState(choices);
 	const [updatedWithAnswer, setUpdatecWithAnswer] = useState(false);
-	const [gotAnswerCorrect, setAnswerCorrect] = useState(false);
 
 	const isAnswered = !isNil(correctAnswer);
 	const timeoutOccurred = isNull(choiceIndex) && isAnswered;
@@ -172,13 +172,11 @@ function Question(props: QuestionProps) {
 	}
 
 	if (isAnswered && !updatedWithAnswer) {
-		let oneIsCorrect = false;
 		const updateChoices = stateChoices.map((d) => {
 			const isCorrect = correctAnswer === d.id;
 			const isSelected = d.state === "selected";
 
 			if (isSelected && isCorrect) {
-				oneIsCorrect = true;
 				// green it
 				return merge({}, d, { state: "correctSelected" });
 			} else if (isSelected && !isCorrect) {
@@ -193,13 +191,19 @@ function Question(props: QuestionProps) {
 
 
 		});
-		setAnswerCorrect(oneIsCorrect);
 		setUpdatecWithAnswer(true);
 		setChoices(updateChoices);
 	}
 
+	// score upate -> show if there is a nonzero update
+	// if negative then 
 	// if choice index is null and correctAnswer is here then there was a timeout
 	// {data.state === "correctSelected" && <ScoreText x="332" y="10">+100</ScoreText>} 447B30
+	const posScoreDelta = props.scoreDelta > 0;
+	const negScoreDelta = props.scoreDelta < 0;
+	const posSpeedScoreDelta = props.speedScoreDelta > 0;
+	const negSpeedScoreDelta = props.speedScoreDelta < 0;
+
 	return (
 		<div>
 			<TimeBarContainer>
@@ -208,7 +212,8 @@ function Question(props: QuestionProps) {
 			<ScoreContainer>{score}</ScoreContainer>
 			<ScoreUpdateContainer>
 				<TimeoutMsgContainer show={timeoutOccurred}>⏳☹️⏳ too slow!</TimeoutMsgContainer>
-				<ScoreUpdate showUpdate={gotAnswerCorrect}><div>+{props.scoreDelta}</div>{props.speedScoreDelta && (<div>🏎️ +{props.speedScoreDelta}</div>)}</ScoreUpdate>
+				<ScoreUpdate showUpdate={props.scoreDelta !== 0 || negSpeedScoreDelta}
+					negative={negScoreDelta || negSpeedScoreDelta}><div>{posScoreDelta ? "+" : ""}{props.scoreDelta && props.scoreDelta.toLocaleString()}</div>{props.speedScoreDelta != 0 ? (<div>🏎️ {posSpeedScoreDelta ? "+" : ""}{props.speedScoreDelta}</div>) : ""}</ScoreUpdate>
 			</ScoreUpdateContainer>
 			<TextOuter>
 				<div>
