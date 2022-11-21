@@ -6,6 +6,7 @@ import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
 // import { KeyPair } from 'cdk-ec2-key-pair';
 import { Asset } from 'aws-cdk-lib/aws-s3-assets';
@@ -49,13 +50,16 @@ export class Ec2CdkStack extends cdk.Stack {
 			assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com')
 		})
 
-		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'))
+		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'));
+		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
 
 		const asg = new autoscaling.AutoScalingGroup(this, 'ASG', {
 			vpc,
 			securityGroup,
 			instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.NANO),
-			machineImage: new ec2.AmazonLinuxImage(),
+			machineImage: new ec2.AmazonLinuxImage({
+				generation: ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
+			}),
 			desiredCapacity: 1,
 			minCapacity: 1,
 			maxCapacity: 1,
@@ -129,6 +133,7 @@ export class Ec2CdkStack extends cdk.Stack {
 			`mkdir server`,
 			`cd server`,
 			`unzip ${localPath}`,
+			`sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:cloudwatch-agent-config.json`, // start cloudwatch agent with config
 			`npm install pm2 -g`,
 			`npm install`,
 			`npm run start:prod`
@@ -144,5 +149,11 @@ export class Ec2CdkStack extends cdk.Stack {
 		});
 
 		asset.grantRead(asg.role);
+
+		const logGroup = new logs.LogGroup(this, "trivia-quote-logs", {
+			logGroupName: "trivia-quote-logs",
+			retention: logs.RetentionDays.THREE_MONTHS,
+
+		});
 	}
 }

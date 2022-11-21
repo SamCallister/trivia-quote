@@ -6,6 +6,8 @@ set -e
 cd server
 npm run build
 cp package.json dist/package.json
+cp -R config dist/config
+cp ../cloudwatch-agent-config.json dist/cloudwatch-agent-config.json
 
 # build the client out
 cd ../client

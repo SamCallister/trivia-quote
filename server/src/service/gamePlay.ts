@@ -2,6 +2,7 @@ import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUnd
 import * as ws from 'ws';
 import constants from '../constants';
 import buildGame from './buildGame';
+import loggerService from './logger';
 
 
 interface Player {
@@ -33,15 +34,6 @@ interface PlayerToMessage {
 	[playerId: string]: SocketMessagesUnion;
 }
 
-const aiProbCorrect = 0.39;
-const pointsPerQuestion = 100;
-const ROUNDS_IN_GAME = 3;
-const QUESTION_RESULT_DELAY = 2.5 * 1000;
-const QUESTION_DELAY = 20 * 1000;
-const ROUND_DELAY = 2 * 1000;
-const RANKING_DELAY = 3 * 1000;
-const QUESTION_MODIFIED_PROBABILITY = 1;
-const QUESTION_MODIFIER_DELAY = 4 * 1000;
 
 function delayPromise(timeToDelay: number) {
 	return new Promise(resolve => setTimeout(resolve, timeToDelay))
@@ -57,9 +49,10 @@ class SinglePlayerGame {
 	players: Players;
 	questionHistory: Array<QuestionHistory>;
 	seenCategories: string[];
+	gameId: string;
 
 
-	constructor(gameData: GameData) {
+	constructor(gameData: GameData, gameId: string) {
 		this.gameData = gameData;
 		this.topics = keys(gameData);
 		this.currentRound = 0;
@@ -69,6 +62,7 @@ class SinglePlayerGame {
 		this.players = {};
 		this.questionHistory = [];
 		this.seenCategories = [];
+		this.gameId = gameId;
 	}
 
 	answerMatchesCurrentMsgQuestion(questionId: string): boolean {
@@ -121,7 +115,7 @@ class SinglePlayerGame {
 			// send out user round choice to everyone
 			this.actions.unshift({
 				msgType: "userRoundChoice",
-				delay: QUESTION_RESULT_DELAY,
+				delay: constants.QUESTION_RESULT_DELAY,
 				value: { categoryId: categoryId },
 				waitForWithDelay: waitForPromise
 			});
@@ -134,7 +128,7 @@ class SinglePlayerGame {
 		// DUMMY message 1 will get made for each player
 		this.actions.unshift({
 			msgType: "questionResult",
-			delay: QUESTION_RESULT_DELAY,
+			delay: constants.QUESTION_RESULT_DELAY,
 			value: {
 				id: currentQuestion.id,
 				answerId: currentQuestion.answerId,
@@ -183,7 +177,7 @@ class SinglePlayerGame {
 	formatQuestion(d: QuestionGameData): QuestionMessage {
 		return {
 			msgType: 'question',
-			delay: QUESTION_DELAY,
+			delay: constants.QUESTION_DELAY,
 			value: {
 				text: d.text,
 				author: d.author,
@@ -201,7 +195,7 @@ class SinglePlayerGame {
 		const titleText = "Next question is...";
 		const chosen = sample([{
 			msgType: 'questionModifierMessage',
-			delay: QUESTION_MODIFIER_DELAY,
+			delay: constants.QUESTION_MODIFIER_DELAY,
 			value: {
 				titleText: titleText,
 				text: ["🤑 Double Points! 🤑"],
@@ -218,7 +212,7 @@ class SinglePlayerGame {
 			}
 		}, {
 			msgType: 'questionModifierMessage',
-			delay: QUESTION_MODIFIER_DELAY,
+			delay: constants.QUESTION_MODIFIER_DELAY,
 			value: {
 				titleText: titleText,
 				text: ["🤯 Triple Points! 🤯"],
@@ -235,7 +229,7 @@ class SinglePlayerGame {
 			}
 		}, {
 			msgType: 'questionModifierMessage',
-			delay: QUESTION_MODIFIER_DELAY,
+			delay: constants.QUESTION_MODIFIER_DELAY,
 			value: {
 				titleText: titleText,
 				text: ["🏎️  Triple speed bonus! 🏎️ "],
@@ -252,7 +246,7 @@ class SinglePlayerGame {
 			}
 		}, {
 			msgType: 'questionModifierMessage',
-			delay: QUESTION_MODIFIER_DELAY,
+			delay: constants.QUESTION_MODIFIER_DELAY,
 			value: {
 				titleText: titleText,
 				text: ["💀Negative Points on wrong answer💀"],
@@ -281,7 +275,7 @@ class SinglePlayerGame {
 		// place the modifier messages in the array + put reference to modifier in the question message
 		const messages: SocketMessagesUnion[] = [];
 		questions.forEach((q) => {
-			if (Math.random() < QUESTION_MODIFIED_PROBABILITY) {
+			if (Math.random() < constants.QUESTION_MODIFIED_PROBABILITY) {
 				const modifier = this.getRandomModifier();
 				messages.push(modifier);
 				q.value.questionPointTransforms = modifier.value.questionPointTransforms;
@@ -304,7 +298,7 @@ class SinglePlayerGame {
 
 		const roundMsg: StaticRoundMessage = {
 			msgType: "staticRound",
-			delay: ROUND_DELAY,
+			delay: constants.ROUND_DELAY,
 			value: {
 				title: `Round ${this.currentRound}`,
 				category: chosenTopic,
@@ -331,7 +325,7 @@ class SinglePlayerGame {
 			});
 
 			forOwn(fakePlayers, (player, playerId) => {
-				const aiPlayerAnswer = Math.random() <= aiProbCorrect ? msg.answerId : "wrongAnswer";
+				const aiPlayerAnswer = Math.random() <= constants.AI_PROB_CORRECT ? msg.answerId : "wrongAnswer";
 				questionEntry.playerAnswers[playerId] = aiPlayerAnswer;
 			});
 
@@ -339,9 +333,9 @@ class SinglePlayerGame {
 		}
 	}
 
-	questionPointsLogic(correct:boolean, modAffectsCorrect:boolean, modFunc:PointTransformer ,points:number, ):number {
+	questionPointsLogic(correct: boolean, modAffectsCorrect: boolean, modFunc: PointTransformer, points: number,): number {
 		if (modAffectsCorrect) {
-			return modFunc(correct ? points:0);
+			return modFunc(correct ? points : 0);
 		} else {
 			return correct ? points : modFunc(points);
 		}
@@ -365,17 +359,17 @@ class SinglePlayerGame {
 				const playerScoreDeltaTransform = get(currentQuestion, 'questionPointTransforms.questionPointTransform.transformer', identityInt) as PointTransformer;
 				const playerScoreAffectsCorrect = get(currentQuestion, 'questionPointTransforms.questionPointTransform.affectsCorrectAnswer', true) as boolean;
 
-				
-				
+
+
 				// assumption -> getting it wrong means you always take the effect
 				// on the score. So either 0 it out or make negative
 				const playerScoreDelta = this.questionPointsLogic(
 					correct,
 					playerScoreAffectsCorrect,
 					playerScoreDeltaTransform,
-					pointsPerQuestion
+					constants.POINTS_PER_QUESTION
 				);
-				
+
 
 				const playerSpeedPointTransform = get(currentQuestion, 'questionPointTransforms.speedPointTransform.transformer', identityInt) as PointTransformer;
 				const playerSpeedPointAffectsCorrect = get(currentQuestion, 'questionPointTransforms.speedPointTransform.affectsCorrectAnswer', true) as boolean;
@@ -385,13 +379,13 @@ class SinglePlayerGame {
 					correct,
 					playerSpeedPointAffectsCorrect,
 					playerSpeedPointTransform,
-					(0.5 * pointsPerQuestion)
+					(0.5 * constants.POINTS_PER_QUESTION)
 				) : 0;
 
 				player.playerScore += playerScoreDelta + playerSpeedScoreDelta;
 
 				const questionResultMessage = {
-					delay: QUESTION_RESULT_DELAY,
+					delay: constants.QUESTION_RESULT_DELAY,
 					msgType: "questionResult",
 					value: {
 						id: currentQuestion.id,
@@ -448,7 +442,7 @@ class SinglePlayerGame {
 
 		const rankingMsg: SocketMessagesUnion = {
 			msgType: "ranking",
-			delay: RANKING_DELAY,
+			delay: constants.RANKING_DELAY,
 			value: {
 				ranking: rankingInfo,
 				roundNumber: this.currentRound
@@ -478,7 +472,7 @@ class SinglePlayerGame {
 
 		const toSend = {
 			msgType: "userChoiceRound",
-			delay: QUESTION_DELAY,
+			delay: constants.QUESTION_DELAY,
 			value: {
 				titleText: title,
 				playerName: playerInfo.playerName,
@@ -549,7 +543,7 @@ class SinglePlayerGame {
 
 			// round 3 is loser's choice
 			if (isEmpty(this.actions)) {
-				if (this.currentRound < ROUNDS_IN_GAME) {
+				if (this.currentRound < constants.ROUNDS_IN_GAME) {
 					// ranking page
 					this.rankingsPage();
 					// round 2 is winner's choice
@@ -564,6 +558,7 @@ class SinglePlayerGame {
 					}
 
 				} else if (this.currentMessage.msgType !== "finalScore") {
+					loggerService.getLogger().info(`game over:${this.gameId}`);
 					// game over
 					this.finalScorePage();
 				} else {
@@ -573,7 +568,6 @@ class SinglePlayerGame {
 
 			this.messageLoop();
 		}
-
 
 	}
 
@@ -632,14 +626,13 @@ class SinglePlayerGame {
 			this.setupRound(chosenTopic);
 			this.messageLoop();
 		}, delay);
-
 	}
 }
 
 
-function initGame(data: GameData) {
+function initGame(data: GameData, gameId: string) {
 	// choose random topic and 3 questions
-	const game = new SinglePlayerGame(data);
+	const game = new SinglePlayerGame(data, gameId);
 	game.seenCategories = keys(data);
 
 	return game;

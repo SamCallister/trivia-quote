@@ -4,6 +4,7 @@ import * as ws from 'ws';
 import gamePlay from './gamePlay';
 import buildGame from './buildGame';
 import constants from '../constants';
+import loggerService from './logger';
 
 interface PlayerInfo {
 	playerName: string;
@@ -130,7 +131,7 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 					constants.QUESTIONS_PER_CATEGORY,
 					[]
 				).then((gameData) => {
-					const newGame = gamePlay.initGame(gameData);
+					const newGame = gamePlay.initGame(gameData, gameId);
 					newGame.seenCategories.push(...keys(gameData));
 
 					forOwn(currentGames[gameId].players, (value, playerId) => {
@@ -150,7 +151,10 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 						})
 					})
 
+					loggerService.getLogger().info(`starting game:${gameId}`);
+
 					newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
+					delete currentGames[gameId];
 				});
 			} else if (parsedMsg.msgType === "updatePlayerInfo") {
 				// update the playerinfo in the game state
