@@ -1,8 +1,9 @@
-import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, identity, get } from 'lodash';
+import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, get } from 'lodash';
 import * as ws from 'ws';
 import constants from '../constants';
 import buildGame from './buildGame';
 import loggerService from './logger';
+import modifiersService from './modifiers';
 
 
 interface Player {
@@ -28,6 +29,7 @@ interface QuestionHistory {
 	playerAnswers: PlayerAnswers;
 	firstAnswerPlayerId?: string;
 	questionPointTransforms?: QuestionPointTransforms;
+	questionAfterEffects?: QuestionAfterEffects;
 }
 
 interface PlayerToMessage {
@@ -37,6 +39,11 @@ interface PlayerToMessage {
 
 function delayPromise(timeToDelay: number) {
 	return new Promise(resolve => setTimeout(resolve, timeToDelay))
+}
+
+interface QuestionImpactedPlayers {
+	players: Set<string>;
+	modifiedDisplay: ModifiedDisplay;
 }
 
 class SinglePlayerGame {
@@ -50,7 +57,7 @@ class SinglePlayerGame {
 	questionHistory: Array<QuestionHistory>;
 	seenCategories: string[];
 	gameId: string;
-
+	currentQuestionAfterEffects?: QuestionImpactedPlayers;
 
 	constructor(gameData: GameData, gameId: string) {
 		this.gameData = gameData;
@@ -191,94 +198,18 @@ class SinglePlayerGame {
 		};
 	}
 
-	getRandomModifier(): QuestionModifierMessage {
-		const titleText = "Next question is...";
-		const chosen = sample([{
-			msgType: 'questionModifierMessage',
-			delay: constants.QUESTION_MODIFIER_DELAY,
-			value: {
-				titleText: titleText,
-				text: ["🤑 Double Points! 🤑"],
-				questionPointTransforms: {
-					questionPointTransform: {
-						transformer: (n: number) => n * 2,
-						affectsCorrectAnswer: true
-					},
-					speedPointTransform: {
-						transformer: identity,
-						affectsCorrectAnswer: true
-					}
-				}
-			}
-		}, {
-			msgType: 'questionModifierMessage',
-			delay: constants.QUESTION_MODIFIER_DELAY,
-			value: {
-				titleText: titleText,
-				text: ["🤯 Triple Points! 🤯"],
-				questionPointTransforms: {
-					questionPointTransform: {
-						transformer: (n: number) => n * 3,
-						affectsCorrectAnswer: true
-					},
-					speedPointTransform: {
-						transformer: identity,
-						affectsCorrectAnswer: true
-					}
-				}
-			}
-		}, {
-			msgType: 'questionModifierMessage',
-			delay: constants.QUESTION_MODIFIER_DELAY,
-			value: {
-				titleText: titleText,
-				text: ["🏎️  Triple speed bonus! 🏎️ "],
-				questionPointTransforms: {
-					questionPointTransform: {
-						transformer: identity,
-						affectsCorrectAnswer: true
-					},
-					speedPointTransform: {
-						transformer: (n: number) => n * 3,
-						affectsCorrectAnswer: true
-					}
-				}
-			}
-		}, {
-			msgType: 'questionModifierMessage',
-			delay: constants.QUESTION_MODIFIER_DELAY,
-			value: {
-				titleText: titleText,
-				text: ["💀Negative Points on wrong answer💀"],
-				questionPointTransforms: {
-					questionPointTransform: {
-						transformer: (n: number) => n * -1,
-						affectsCorrectAnswer: false
-					},
-					speedPointTransform: {
-						transformer: identity,
-						affectsCorrectAnswer: true
-					}
-				}
-			}
-		}]);
-
-		if (!chosen) {
-			throw new Error("Failed to choose random modifier");
-		}
-
-		return chosen as QuestionModifierMessage;
-	}
-
 	addQuestionModifiers(questions: QuestionMessage[]) {
 		// some probability that each question is modified
 		// place the modifier messages in the array + put reference to modifier in the question message
 		const messages: SocketMessagesUnion[] = [];
+		const prob = constants.QUESTION_MODIFIED_PROBABILITY_BY_ROUND[this.currentRound] || constants.QUESTION_MODIFIED_PROBABILITY;
 		questions.forEach((q) => {
-			if (Math.random() < constants.QUESTION_MODIFIED_PROBABILITY) {
-				const modifier = this.getRandomModifier();
+			if (Math.random() < prob) {
+				const modifier = modifiersService.getRandomModifier();
 				messages.push(modifier);
 				q.value.questionPointTransforms = modifier.value.questionPointTransforms;
+				q.value.modifiedDisplay = modifier.value.modifiedDisplay;
+				q.value.questionAfterEffects = modifier.value.questionAfterEffects;
 			}
 
 			messages.push(q);
@@ -316,7 +247,8 @@ class SinglePlayerGame {
 				id: msg.value.id,
 				answerId: msg.answerId,
 				playerAnswers: {},
-				questionPointTransforms: msg.value.questionPointTransforms
+				questionPointTransforms: msg.value.questionPointTransforms,
+				questionAfterEffects: msg.value.questionAfterEffects
 			};
 
 			// all the fake players answer
@@ -342,24 +274,23 @@ class SinglePlayerGame {
 	}
 
 	buildPlayerToMsg(toSend: SocketMessagesUnion): PlayerToMessage {
+
 		if (toSend.msgType === "questionResult") {
+
+			const currentQuestion = last(this.questionHistory);
+			if (!currentQuestion) {
+				throw new Error("expected currentQuestion to not be null or undefined");
+			}
 			// for each player check the question
 			const result = map(this.players, (player, playerId) => {
 
-				const currentQuestion = last(this.questionHistory);
 
 				const identityInt = (n: number) => n;
-
-				if (!currentQuestion) {
-					throw new Error("expected currentQuestion to not be null or undefined");
-				}
 
 				const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
 
 				const playerScoreDeltaTransform = get(currentQuestion, 'questionPointTransforms.questionPointTransform.transformer', identityInt) as PointTransformer;
 				const playerScoreAffectsCorrect = get(currentQuestion, 'questionPointTransforms.questionPointTransform.affectsCorrectAnswer', true) as boolean;
-
-
 
 				// assumption -> getting it wrong means you always take the effect
 				// on the score. So either 0 it out or make negative
@@ -370,12 +301,11 @@ class SinglePlayerGame {
 					constants.POINTS_PER_QUESTION
 				);
 
-
 				const playerSpeedPointTransform = get(currentQuestion, 'questionPointTransforms.speedPointTransform.transformer', identityInt) as PointTransformer;
 				const playerSpeedPointAffectsCorrect = get(currentQuestion, 'questionPointTransforms.speedPointTransform.affectsCorrectAnswer', true) as boolean;
 				const firstPlayerToAnswer = currentQuestion.firstAnswerPlayerId === playerId;
 
-				const playerSpeedScoreDelta = firstPlayerToAnswer ? this.questionPointsLogic(
+				const playerSpeedScoreDelta: number = firstPlayerToAnswer ? this.questionPointsLogic(
 					correct,
 					playerSpeedPointAffectsCorrect,
 					playerSpeedPointTransform,
@@ -395,6 +325,28 @@ class SinglePlayerGame {
 						playerSpeedScoreDelta: playerSpeedScoreDelta
 					}
 				};
+
+				// deal with after effects
+				if (currentQuestion.questionAfterEffects) {
+					const affectedPlayers = new Set<string>();
+					this.currentQuestionAfterEffects = {
+						modifiedDisplay: currentQuestion.questionAfterEffects.modifiedDisplay,
+						players: affectedPlayers
+					};
+					map(this.players, (player, playerId) => {
+						const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
+
+						const affected = currentQuestion.questionAfterEffects && currentQuestion.questionAfterEffects.isPlayerImpacted(
+							[], playerId, correct
+						);
+
+						if (affected) {
+							affectedPlayers.add(playerId);
+						}
+
+					});
+				}
+
 				return { [playerId]: questionResultMessage };
 			});
 
@@ -410,6 +362,22 @@ class SinglePlayerGame {
 						})
 				});
 			});
+
+			return playerToMsgMap;
+		} else if (toSend.msgType === "question" && this.currentQuestionAfterEffects) {
+			const modifiedDisplay = this.currentQuestionAfterEffects.modifiedDisplay;
+			const affectedPlayers = this.currentQuestionAfterEffects.players;
+			const playerToMsgMap = mapValues(this.players, (player) => {
+				return merge({}, toSend, {
+					value: merge(
+						{},
+						toSend.value,
+						{
+							modifiedDisplay: affectedPlayers.has(player.playerId) ? modifiedDisplay : ""
+						})
+				});
+			});
+			this.currentQuestionAfterEffects = undefined;
 
 			return playerToMsgMap;
 		}

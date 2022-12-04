@@ -27,7 +27,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path={"/"} element={<Home></Home>} />
-            <Route path={`/game/:id`} element={<GameRoom></GameRoom>}></Route>
+            <Route path={`/:id`} element={<GameRoom></GameRoom>}></Route>
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>

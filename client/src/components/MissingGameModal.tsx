@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Modal from 'react-modal';
 import styled from "styled-components";
 import { FaRegWindowClose } from "react-icons/fa";
@@ -10,8 +10,8 @@ interface OnCloseFunc {
 
 interface MissingGameModalProps {
 	isOpen: boolean;
-	gameId: string;
 	onClose: OnCloseFunc;
+	text: string;
 };
 
 const CloseWindowContainer = styled.div`
@@ -52,7 +52,6 @@ const customStyles = {
 		transform: 'translate(-50%, -50%)',
 	},
 };
-
 function MissingGameModal(props: MissingGameModalProps) {
 
 	const closeModal = () => {
@@ -66,7 +65,7 @@ function MissingGameModal(props: MissingGameModalProps) {
 		<CloseWindowContainer>
 			<FaRegWindowClose onClick={closeModal}></FaRegWindowClose>
 		</CloseWindowContainer>
-		<ModalHeader>Game {props.gameId} does not exist.</ModalHeader>
+		<ModalHeader>{props.text}</ModalHeader>
 		<ModalContent>
 			<ButtonContainerModal >
 				<SvgButton clickButtonHandler={closeModal}>

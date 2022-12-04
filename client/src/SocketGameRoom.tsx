@@ -11,7 +11,8 @@ import { useSpring, animated } from "react-spring";
 import GameMultiplayer from "./GameMultiplayer";
 import SvgButton from "./components/SvgButton";
 import { device } from './service/deviceService';
-
+import MissingGameModal from "./components/MissingGameModal";
+import { useNavigate } from "react-router-dom";
 
 interface SocketGameRoomProps {
 	gameId: string;
@@ -144,7 +145,16 @@ const LowerContainer = styled.div`
 function SocketGameRoom(props: SocketGameRoomProps) {
 	const { gameId } = props;
 
-	const { sendMessage, lastJsonMessage, readyState } = useWebSocket(`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${gameId}`);
+	const navigate = useNavigate();
+	const [socketClosed, setSocketClosed] = useState(false);
+	const { sendMessage, lastJsonMessage, readyState } = useWebSocket(
+		`${WEB_SOCKET_PREFIX}://${window.location.hostname}:${window.location.port}/ws/${gameId}`,
+		{
+			onClose: (e) => {
+				setSocketClosed(true);
+			}
+		}
+	);
 	const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());
 	const [gameRoomInfo, setGameRoomInfo] = useState(props.gameRoomInfo);
 	const [gameStarted, setGameStarted] = useState(false);
@@ -252,15 +262,28 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 		}
 	};
 
+	if (socketClosed) {
+		const closeGameMessage = gameStarted ? "Game connection lost" : "Host closed the game";
+
+		return (<MissingGameModal
+			isOpen={!!socketClosed}
+			text={closeGameMessage}
+			onClose={() => {
+				navigate('/');
+			}}></MissingGameModal>);
+	}
+
 	if (gameStarted) {
 		return (<GameMultiplayer currentMessage={(lastJsonMessage as unknown) as SocketMessagesUnion}
 			send={send}></GameMultiplayer>);
 	}
 
-
-	return (<GameRoomContainer><UpperContainer><PlayerSelectContainer><Player onChange={setPlayerInfo}></Player></PlayerSelectContainer>
+	return (<GameRoomContainer><UpperContainer><PlayerSelectContainer><Player onChange={setPlayerInfo} disabled={gameStarting.starting}></Player></PlayerSelectContainer>
 		<RowsContainer>
-			{gameRoomInfo.players.map((p, i) => {
+			{gameRoomInfo.players.filter((p) => {
+				return p.playerId !== gameRoomInfo.yourPlayerId;
+			})
+			.map((p, i) => {
 				return (<PlayerRow key={i}>
 					<PlayerContainer>
 						<svg viewBox="0 0 100 100">

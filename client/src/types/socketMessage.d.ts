@@ -29,6 +29,7 @@ interface QuestionMessageValue {
 	id: string;
 	roundNumber: number;
 	choices: Array<QuestionChoice>;
+	modifiedDisplay?: string;
 }
 
 interface MessageData {
@@ -75,6 +76,7 @@ interface QuestionResultMessageValue {
 	playerScoreDelta: number;
 	playerSpeedScoreDelta: number;
 	playerScore: number;
+	modifiedDisplay?: string;
 }
 
 interface QuestionResultMessage extends MessageData {
@@ -92,6 +94,7 @@ interface PlayerRankingInfo {
 interface PlayerInfo {
 	playerName: string;
 	playerAvatar: string;
+	playerId: string;
 }
 
 interface RankingMessageValue {
@@ -113,6 +116,7 @@ interface GameRoomInfoMessageValue {
 	players: PlayerInfo[];
 	isHost?: boolean;
 	gameId: string;
+	yourPlayerId: string;
 }
 
 interface GameRoomInfoMessage extends MessageData {

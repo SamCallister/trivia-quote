@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { values, omit, forOwn, merge, keys } from 'lodash';
+import { values, omit, forOwn, merge, keys, map } from 'lodash';
 import * as ws from 'ws';
 import gamePlay from './gamePlay';
 import buildGame from './buildGame';
@@ -9,6 +9,7 @@ import loggerService from './logger';
 interface PlayerInfo {
 	playerName: string;
 	playerAvatar: string;
+	playerId: string;
 	socket?: ws.WebSocket;
 	isHost: boolean;
 }
@@ -48,7 +49,8 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 		value: {
 			gameId,
 			players: [playerInfo],
-			isHost: true
+			isHost: true,
+			yourPlayerId: playerId
 		},
 		delay: 0,
 		msgType: 'gameRoomInfo'
@@ -61,7 +63,8 @@ function broadcastGameStateToAll(gameInfo: GameInfo): GameRoomInfoMessage {
 		value: {
 			gameId: gameInfo.gameId,
 			players: values(gameInfo.players).map(p => omit(p, ["socket"])),
-			isHost: false
+			isHost: false,
+			yourPlayerId: ""
 		},
 		msgType: 'gameRoomInfo',
 		delay: 0
@@ -69,9 +72,9 @@ function broadcastGameStateToAll(gameInfo: GameInfo): GameRoomInfoMessage {
 
 	values(gameInfo.players).map((playerValue) => {
 		if (playerValue.socket) {
-			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost });
+			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost, yourPlayerId: playerValue.playerId });
 			playerValue.socket.send(JSON.stringify(
-				merge({}, currentGameInfo, { value: isHostValue })
+				merge({}, currentGameInfo, { value: isHostValue})
 			));
 		}
 	});
@@ -152,6 +155,15 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 					})
 
 					loggerService.getLogger().info(`starting game:${gameId}`);
+					// change the socket close behavior to remove players from the game only
+					map(newGame.players, (p) => {
+						if(p.socket) {
+							p.socket.onclose = () => {
+								// remove player from the game
+								delete newGame.players[p.playerId];
+							}
+						}
+					});
 
 					newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
 					delete currentGames[gameId];
@@ -168,6 +180,37 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 		}
 
 	}
+
+	playerInfo.socket.onclose = () => {
+
+		const maybeCurrentGame = currentGames[gameId];
+		if (maybeCurrentGame) {
+			const maybePlayerInfo = maybeCurrentGame.players[playerId];
+			delete maybeCurrentGame.players[playerId];
+
+			if (maybePlayerInfo.isHost) {
+				// close all sockets? -> client deals on close event the game was cancelled
+				map(maybeCurrentGame.players, (v) => {
+					if (v.socket) {
+						v.socket.close();
+					}
+				});
+				// delete game info
+				delete currentGames[gameId];
+			}
+			else if (keys(maybeCurrentGame.players).length) {
+				broadcastGameStateToAll(gameInfo);
+			} else {
+				// probably not reachable?
+				delete currentGames[gameId];
+			}
+
+		}
+
+		// set update message
+	};
+
+
 	currentGames[gameId] = gameInfo;
 }
 

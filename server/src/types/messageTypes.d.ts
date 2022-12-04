@@ -10,6 +10,7 @@ interface GameRoomInfo {
 	gameId: string;
 	players: PlayerInfo[];
 	isHost: boolean;
+	yourPlayerId: string;
 }
 
 interface GameRoomInfoMessage extends MessageData {
@@ -24,10 +25,10 @@ interface QuestionChoice {
 
 interface QuestionGameData {
 	text: string;
-		id: string;
-		answerId: string;
-		author: string;
-		choices: QuestionChoice[];
+	id: string;
+	answerId: string;
+	author: string;
+	choices: QuestionChoice[];
 }
 
 interface GameData {
@@ -46,13 +47,17 @@ interface QuestionChoice {
 	id: string;
 }
 
+type ModifiedDisplay = "lightsOut" | "splitBrain" | "memoryLoss";
+
 interface QuestionMessageValue {
 	text: string;
 	author: string;
 	id: string;
 	roundNumber: number;
 	choices: Array<QuestionChoice>;
-	questionPointTransforms?:QuestionPointTransforms;
+	questionPointTransforms?: QuestionPointTransforms;
+	modifiedDisplay?: ModifiedDisplay;
+	questionAfterEffects?: QuestionAfterEffects;
 }
 
 interface MessageData {
@@ -214,14 +219,33 @@ interface TransformerInfo {
 }
 
 interface QuestionPointTransforms {
-	questionPointTransform:TransformerInfo;
-	speedPointTransform:TransformerInfo;
+	questionPointTransform: TransformerInfo;
+	speedPointTransform: TransformerInfo;
+}
+
+interface AfterQuestionFunction {
+	(data: PlayerRankingInfo[], playerId: string, correct:boolean): boolean;
+}
+
+interface QuestionAfterEffects {
+	isPlayerImpacted: AfterQuestionFunction;
+	modifiedDisplay: ModifiedDisplay;
+}
+
+// score impacts
+// question display impacts
+
+interface QuestionModifications {
+	modifiedDisplay: ModifiedDisplay;
+	questionPointTransforms: QuestionPointTransforms;
 }
 
 interface QuestionModifierMessageValue {
-	titleText:string;
-	text:string[];
-	questionPointTransforms:QuestionPointTransforms
+	titleText: string;
+	text: string[];
+	questionPointTransforms: QuestionPointTransforms;
+	modifiedDisplay?: ModifiedDisplay;
+	questionAfterEffects?: QuestionAfterEffects
 }
 
 interface QuestionModifierMessage extends MessageData {

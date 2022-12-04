@@ -7,7 +7,7 @@ import { device } from './service/deviceService';
 import { avatarIds } from "./components/Avatar";
 import { min, max, merge, findIndex } from "lodash";
 import axios from "axios";
-import MissingGameModel from './components/MissingGameModal';
+import MissingGameModal from './components/MissingGameModal';
 import Player from "./components/Player";
 import localPlayerInfo from "./service/localPlayerInfo";
 
@@ -94,7 +94,7 @@ function Home() {
     axios.post("/multiplayer-game", playerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
-        navigate(`/game/${gameRoomInfo.value.gameId}`, {
+        navigate(`/${gameRoomInfo.value.gameId}`, {
           state: gameRoomInfo,
         });
       });
@@ -115,7 +115,7 @@ function Home() {
     axios.put(`/multiplayer-game/${joinGameId}`, playerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
-        navigate(`/game/${gameRoomInfo.value.gameId}`, {
+        navigate(`/${gameRoomInfo.value.gameId}`, {
           state: gameRoomInfo,
         });
       })
@@ -147,9 +147,10 @@ function Home() {
             Join Game
           </SvgButton>
         </ButtonContainer>
-        <MissingGameModel isOpen={isMissingGameModalOpen}
-          gameId={joinGameId}
-          onClose={() => setMissingGameModalOpen(false)}></MissingGameModel>
+        <MissingGameModal
+          isOpen={isMissingGameModalOpen}
+          text={`Game ${joinGameId} does not exist.`}
+          onClose={() => setMissingGameModalOpen(false)}></MissingGameModal>
       </LowerContainer>
     </Wrapper>
   );

@@ -109,13 +109,15 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 		} else if (data.msgType === "question" || data.msgType === "questionResult") {
 			const scoreDelta = data.msgType === "questionResult" ? data.value.playerScoreDelta : 0;
 			const speedScoreDelta = data.msgType === "questionResult" ? data.value.playerSpeedScoreDelta : 0;
+			const modifiedDisplay = data.value.modifiedDisplay;
 			return (<div key={prevQuestion.value.id}>
 				<Question delay={prevQuestion.delay}
 					text={prevQuestion.value.text}
 					author={prevQuestion.value.author}
 					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}
 					scoreDelta={scoreDelta}
-					speedScoreDelta={speedScoreDelta}></Question>
+					speedScoreDelta={speedScoreDelta}
+					modifiedDisplay={modifiedDisplay}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>

@@ -36,3 +36,5 @@ cdk/node_modules
 
 # sqllite db
 server/questions.db
+
+__pycache__

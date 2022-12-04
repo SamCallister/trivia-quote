@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import uuid
 from sqlalchemy import create_engine
+from validate_questions import validate_final_data, validate_df
 
 
 def make_template(quote, answers):
@@ -14,8 +15,9 @@ def make_template(quote, answers):
     return q
 
 
-df = pd.read_csv('data/quotes.csv')
-records = df.dropna().to_dict('records')
+df = pd.read_csv('data/newQuotes.csv')
+validate_df(df)
+records = df.to_dict('records')
 
 l = [
     {**d, **{"template": make_template(d["quote"], d["hidden_words"])}}
@@ -24,6 +26,7 @@ l = [
 
 final_list = []
 for d in l:
+    assert isinstance(d["choices"],str) and len(d) > 0, "Expected row to have choices:" + str(d)
     choices = d["choices"].split("|")
     if len(choices) == 1:
         choices = choices[0].split(",")
@@ -41,6 +44,7 @@ for d in l:
         "answerId": answer_choice_id
     })
 
+validate_final_data(final_list)
 final_df = pd.DataFrame(final_list)
 p = Path("../server/questions.db")
 sql_engine = create_engine(f"sqlite:///{p.absolute()}")

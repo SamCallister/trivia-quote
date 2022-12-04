@@ -27,7 +27,7 @@ const PlayerContainer = styled.div`
 
 const RankNumberContainer = styled.div`
 position:absolute;
-left:-19px;
+left:-21px;
 top:0px;
 `;
 

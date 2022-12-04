@@ -1,3 +1,13 @@
+interface RoundProbs {
+	[playerId: number]: number;
+}
+
+const QUESTION_MODIFIED_PROBABILITY_BY_ROUND: RoundProbs = {
+	1: 0.2,
+	2: 0.25,
+	3: 0.33
+};
+
 
 export default {
 	PLAYER_ID_COOKIE_ID: "playerId",
@@ -13,5 +23,6 @@ export default {
 	ROUND_DELAY: 2 * 1000,
 	RANKING_DELAY: 3 * 1000,
 	QUESTION_MODIFIED_PROBABILITY: 0.1,
+	QUESTION_MODIFIED_PROBABILITY_BY_ROUND: QUESTION_MODIFIED_PROBABILITY_BY_ROUND,
 	QUESTION_MODIFIER_DELAY: 4 * 1000
 };

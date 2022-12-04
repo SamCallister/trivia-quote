@@ -6,8 +6,8 @@
 ```
 conda env create -f environment.yaml
 conda activate trivia_quote
-cd etl/src
-python build_questions.py
+cd etl
+python src/build_questions.py
 ```
 
 ### Client

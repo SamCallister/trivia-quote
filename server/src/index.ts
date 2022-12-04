@@ -50,7 +50,7 @@ router.get('/', (req, res) => {
 router.post("/multiplayer-game", (req, res) => {
 	const roomInfo = games.createNewGame(
 		req.cookies[constants.PLAYER_ID_COOKIE_ID],
-		merge({}, req.body, { isHost: true }));
+		merge({}, req.body, { isHost: true, playerId: req.cookies[constants.PLAYER_ID_COOKIE_ID] }));
 
 	res.status(200).send(roomInfo);
 });
@@ -59,7 +59,7 @@ const joinGame = (req: express.Request, res: express.Response) => {
 	const roomInfo = games.joinGame(
 		req.params.gameId,
 		req.cookies[constants.PLAYER_ID_COOKIE_ID],
-		merge({}, req.body, { isHost: false })
+		merge({}, req.body, { isHost: false, playerId: req.cookies[constants.PLAYER_ID_COOKIE_ID] })
 	);
 
 	if (!roomInfo) {

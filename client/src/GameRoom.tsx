@@ -1,13 +1,10 @@
 import React, { useEffect } from "react";
 import { useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import styled from "styled-components";
 import axios, { AxiosError } from "axios";
 import MissingGameModal from "./components/MissingGameModal";
-
 import localPlayerInfo from "./service/localPlayerInfo";
 import SocketGameRoom from "./SocketGameRoom";
-
 
 
 const axiosConfig = {
@@ -15,7 +12,6 @@ const axiosConfig = {
 		'Content-Type': 'application/json',
 	}
 };
-
 
 // message types
 // GameRoomInfo -> broadcasts info on players coming and going
@@ -35,7 +31,6 @@ function GameRoom() {
 			axios.put(`/multiplayer-game/${id}`, playerInfo, axiosConfig)
 				.then((res) => {
 					const gameRoomInfoResponse = res.data as GameRoomInfoMessage;
-
 					setGameRoomInfo(gameRoomInfoResponse.value);
 				})
 				.catch((err: AxiosError) => {
@@ -49,8 +44,8 @@ function GameRoom() {
 		return (<div>
 			{!missingGameId && (<span>loading...</span>)}
 			<MissingGameModal
-				gameId={missingGameId}
 				isOpen={!!missingGameId}
+				text={`Game ${missingGameId} does not exist.`}
 				onClose={() => {
 					navigate('/');
 				}}></MissingGameModal>

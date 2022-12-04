@@ -20,6 +20,7 @@ const OuterContainer = styled.div`
 
 interface ArrowContainerProps {
 	show: boolean;
+	disabled?: boolean;
 };
 
 interface PlayerChangeFunc {
@@ -27,7 +28,8 @@ interface PlayerChangeFunc {
 }
 
 interface PlayerProps {
-	onChange?: PlayerChangeFunc
+	onChange?: PlayerChangeFunc;
+	disabled?: boolean;
 }
 
 const ArrowContainer = styled.div<ArrowContainerProps>`
@@ -51,7 +53,6 @@ const PlateContainer = styled.div`
   margin-bottom: 24px;
 `;
 
-localPlayerInfo
 function Player(props: PlayerProps) {
 	const playerArray = useLocalStorage("playerInfo",
 		localPlayerInfo.getPlayerInfo());
@@ -71,10 +72,24 @@ function Player(props: PlayerProps) {
 	}
 
 	const moveCharIndex = (direction: number) => {
+		if (props.disabled) {
+			return;
+		}
+
 		const newCharIndex = avatarIndex + direction;
 		const boundedCharIndex = min([max([newCharIndex, 0]), avatarIds.length - 1]);
 		setPlayerInfoWrapper(merge({}, playerInfo, { playerAvatar: avatarIds[boundedCharIndex] }));
 		setAvatarIndex(boundedCharIndex);
+	};
+
+	const inputChangeFunc = (v:string) => {
+		if (props.disabled) {
+			return;
+		}
+
+		setPlayerInfoWrapper(
+			merge({}, playerInfo, { playerName: v })
+		)
 	};
 
 
@@ -86,13 +101,11 @@ function Player(props: PlayerProps) {
 					<circle cx="50" cy="50" r="48" />
 					<Avatar avatarId={avatarIds[avatarIndex]}></Avatar>
 				</svg>
-				<ArrowContainer show={avatarIndex < avatarIds.length - 1}><FaArrowRight onClick={moveCharIndex.bind(this, 1)}></FaArrowRight></ArrowContainer>
+				<ArrowContainer show={avatarIndex < avatarIds.length - 1} disabled={props.disabled}><FaArrowRight onClick={moveCharIndex.bind(this, 1)}></FaArrowRight></ArrowContainer>
 			</PlayerContainer>
 			<LowerContainer>
 				<PlateContainer>
-					<NamePlate value={playerInfo.playerName} inputChange={(v) => setPlayerInfoWrapper(
-						merge({}, playerInfo, { playerName: v })
-					)}></NamePlate>
+					<NamePlate disabled={props.disabled} value={playerInfo.playerName} inputChange={inputChangeFunc}></NamePlate>
 				</PlateContainer>
 			</LowerContainer>
 		</OuterContainer>
