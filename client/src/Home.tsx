@@ -7,9 +7,11 @@ import { device } from './service/deviceService';
 import { avatarIds } from "./components/Avatar";
 import { min, max, merge, findIndex } from "lodash";
 import axios from "axios";
-import MissingGameModal from './components/MissingGameModal';
+import TriviaQuoteModal from './components/TriviaQuoteModal';
 import Player from "./components/Player";
 import localPlayerInfo from "./service/localPlayerInfo";
+import { Link } from "react-router-dom";
+import HelpModal from "./components/HelpModal";
 
 
 const Wrapper = styled.div`
@@ -18,6 +20,7 @@ const Wrapper = styled.div`
   align-items: center;
   ${props => props.theme.appContainerStyles}
   margin:auto;
+  position:relative;
 `;
 
 const Title = styled.div`
@@ -36,7 +39,6 @@ const Title = styled.div`
 const PlayerContainer = styled.div`
   width: 70%;
 `;
-
 
 const ButtonContainer = styled.div`
   width: 80%;
@@ -73,13 +75,17 @@ border-right:none;
 border-bottom:1px solid black;
 outline:none;`;
 
+const HelpModalContainer = styled.div`
+position:absolute;
+top:0px;
+left:10px;`;
+
 
 function Home() {
   const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());
-  const [avatarIndex, setAvatarIndex] = useState(
-    findIndex(avatarIds, (avatarId) => avatarId === playerInfo.playerAvatar)
-  );
+ 
   const [isMissingGameModalOpen, setMissingGameModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [joinGameId, setJoinGameId] = useState("");
   const navigate = useNavigate();
 
@@ -124,15 +130,10 @@ function Home() {
       });
   };
 
-  const moveCharIndex = (direction: number) => {
-    const newCharIndex = avatarIndex + direction;
-    const boundedCharIndex = min([max([newCharIndex, 0]), avatarIds.length - 1]);
-    setPlayerInfo(merge({}, playerInfo, { playerAvatar: avatarIds[boundedCharIndex] }));
-    setAvatarIndex(boundedCharIndex);
-  };
 
   return (
     <Wrapper>
+      <HelpModalContainer><Link to={""} onClick={() => setIsHelpModalOpen(true)}>Help</Link></HelpModalContainer>
       <Title>Trivia Quote</Title>
       <PlayerContainer><Player></Player></PlayerContainer>
       <LowerContainer>
@@ -147,10 +148,13 @@ function Home() {
             Join Game
           </SvgButton>
         </ButtonContainer>
-        <MissingGameModal
+        <TriviaQuoteModal
           isOpen={isMissingGameModalOpen}
           text={`Game ${joinGameId} does not exist.`}
-          onClose={() => setMissingGameModalOpen(false)}></MissingGameModal>
+          onClose={() => setMissingGameModalOpen(false)}></TriviaQuoteModal>
+        <HelpModal
+          open={isHelpModalOpen}
+          onClose={() => setIsHelpModalOpen(false)}></HelpModal>
       </LowerContainer>
     </Wrapper>
   );

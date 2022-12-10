@@ -4,7 +4,7 @@ import constants from '../constants';
 import buildGame from './buildGame';
 import loggerService from './logger';
 import modifiersService from './modifiers';
-
+import logger from './logger';
 
 interface Player {
 	playerId: string;
@@ -435,7 +435,8 @@ class SinglePlayerGame {
 	userChoice(playerInfo: PlayerRankingInfo | undefined, title: string) {
 
 		if (!playerInfo) {
-			throw new Error("expected playerInfo to be defined when user choosing round");
+			logger.getLogger().info("missing playerinfo in userChoice, returning");
+			return;
 		}
 
 		const toSend = {
@@ -477,7 +478,13 @@ class SinglePlayerGame {
 	afterMessageDelay(currentCount: number) {
 		// if question type message -> send the incorrect answer to the clients with their new score
 		// unless they have answered already
-		// if all the players answer -> 
+		// if all the players answer ->
+
+		// if there are no more players exit
+		if (keys(this.players).length == 0) {
+			logger.getLogger().info("No players left, exiting");
+			return;
+		}
 
 		if (this.eventLoopCount == currentCount) {
 

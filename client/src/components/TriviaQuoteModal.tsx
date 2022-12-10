@@ -8,10 +8,11 @@ interface OnCloseFunc {
     (): void;
 };
 
-interface MissingGameModalProps {
+interface TriviaQuoteModalProps {
 	isOpen: boolean;
 	onClose: OnCloseFunc;
-	text: string;
+	text?: string;
+	children?: React.ReactNode;
 };
 
 const CloseWindowContainer = styled.div`
@@ -52,11 +53,19 @@ const customStyles = {
 		transform: 'translate(-50%, -50%)',
 	},
 };
-function MissingGameModal(props: MissingGameModalProps) {
+function TriviaQuoteModal(props: TriviaQuoteModalProps) {
 
 	const closeModal = () => {
 		props.onClose();
 	}
+
+	const getContent = () => {
+		if (props.text) {
+			return (<ModalHeader>{props.text}</ModalHeader>);
+		}
+
+		return props.children;
+	};
 
 	return (<Modal
 		isOpen={props.isOpen}
@@ -65,7 +74,7 @@ function MissingGameModal(props: MissingGameModalProps) {
 		<CloseWindowContainer>
 			<FaRegWindowClose onClick={closeModal}></FaRegWindowClose>
 		</CloseWindowContainer>
-		<ModalHeader>{props.text}</ModalHeader>
+		{getContent()}
 		<ModalContent>
 			<ButtonContainerModal >
 				<SvgButton clickButtonHandler={closeModal}>
@@ -76,4 +85,4 @@ function MissingGameModal(props: MissingGameModalProps) {
 	</Modal>);
 }
 
-export default MissingGameModal;
+export default TriviaQuoteModal;

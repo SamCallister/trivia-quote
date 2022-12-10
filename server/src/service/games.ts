@@ -95,8 +95,10 @@ function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): Gam
 
 	const currentGameInfo = broadcastGameStateToAll(gameInfo);
 
-
 	currentGames[gameId] = gameInfo;
+
+	// add playerId to current game info
+	currentGameInfo.value.yourPlayerId = playerId;
 
 	return currentGameInfo;
 }

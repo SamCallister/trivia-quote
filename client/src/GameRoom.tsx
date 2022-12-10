@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios, { AxiosError } from "axios";
-import MissingGameModal from "./components/MissingGameModal";
+import TriviaQuoteModal from "./components/TriviaQuoteModal";
 import localPlayerInfo from "./service/localPlayerInfo";
 import SocketGameRoom from "./SocketGameRoom";
 
@@ -43,12 +43,12 @@ function GameRoom() {
 	if (!gameRoomInfo) {
 		return (<div>
 			{!missingGameId && (<span>loading...</span>)}
-			<MissingGameModal
+			<TriviaQuoteModal
 				isOpen={!!missingGameId}
 				text={`Game ${missingGameId} does not exist.`}
 				onClose={() => {
 					navigate('/');
-				}}></MissingGameModal>
+				}}></TriviaQuoteModal>
 		</div>);
 	}
 

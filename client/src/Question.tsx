@@ -5,7 +5,8 @@ import AnswerButton from "./components/AnswerButton";
 import { merge, partial, isNil, isEmpty, head, isNull } from "lodash";
 import questionTextService from './service/questionTextService';
 import { useSpring, animated, useSprings } from 'react-spring'
-import useMeasure from 'react-use-measure'
+import useMeasure from 'react-use-measure';
+import { use100vh } from 'react-div-100vh';
 
 const TimeBarContainer = styled.div`
 	height: 28px;
@@ -15,7 +16,6 @@ const TextOuter = styled.div`
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	height: 85vh;
 	align-items: center;
 `;
 
@@ -23,7 +23,7 @@ const TextContainer = styled.div`
 	margin-left: 24px;
 	margin-right: 24px;
 	margin-top: 48px;
-	${props => props.theme.normalText};
+	font-size: 20px;
 `;
 
 const AnswersOuterContainer = styled.div`
@@ -33,6 +33,7 @@ const AnswersOuterContainer = styled.div`
 	display: flex;
 	flex-direction:column;
 	z-index:2;
+	position: relative;
 `;
 
 const IndividualAnswerContainer = styled.div`
@@ -95,16 +96,13 @@ ${props => props.theme.normalText};
 visibility: ${props => props.show ? "visible" : "hidden"};
 `;
 
-interface SplitBrainProps {
-	secondHalf: boolean;
-}
-
-const SplitBrainCover = styled.div<SplitBrainProps>`
+const SplitBrainCover = styled.div`
 	position: absolute;
 	background-color: black;
 	width: 100%;
-	height: 50%;
-	top: ${props => props.secondHalf ? '28px' : '50%'};
+	height: 100%;
+	top: 0;
+	left: 0;
 	z-index: 20;
 `;
 
@@ -117,6 +115,7 @@ color: black;`;
 
 const QuestionTextContainer = styled.div`
 	z-index: 2;
+	position: relative;
 `;
 
 interface QuestionAnsweredFunc {
@@ -144,6 +143,7 @@ function Question(props: QuestionProps) {
 
 	const { delay, text, choices, score, onChange, questionId, correctAnswer, author } = props;
 
+	const viewHeight = `${use100vh() * .85}px`;
 	const [useMeasureRef, bounds] = useMeasure()
 	const [choiceIndex, setChoiceIndex] = useState(null);
 	const [stateChoices, setChoices] = useState(choices);
@@ -155,10 +155,11 @@ function Question(props: QuestionProps) {
 	const isLightsOut = props.modifiedDisplay == "lightsOut";
 	const isSplitBrain = props.modifiedDisplay == "splitBrain";
 	const isMemoryLoss = props.modifiedDisplay == "memoryLoss";
+	const choiceSelected = isNil(choiceIndex);
 
 	const [styles, lightsOutApi] = useSpring(() => {
 
-		if (isLightsOut && bounds.height) {
+		if (isLightsOut && bounds.height && choiceSelected) {
 			return {
 				from: {
 					top: "28px",  // eslint-disable-next-line
@@ -225,7 +226,7 @@ function Question(props: QuestionProps) {
 
 	const clickedAnswer = (selectedIndex: number) => {
 		// mark as selected
-		if (isNil(choiceIndex) && !timeoutOccurred) {
+		if (choiceSelected && !timeoutOccurred) {
 			cleanUpDisplay();
 			const newChoices = stateChoices.map((d, i) => {
 				if (selectedIndex === i) {
@@ -300,9 +301,8 @@ function Question(props: QuestionProps) {
 	const negSpeedScoreDelta = props.speedScoreDelta < 0;
 
 	return (
-		<ParentContainer isLightsOut={isLightsOut} ref={useMeasureRef}>
-			{isLightsOut && (<animated.div style={styles}></animated.div>)}
-			{isSplitBrain && (<SplitBrainCover secondHalf={splitBrainSecondHalf}></SplitBrainCover>)}
+		<ParentContainer isLightsOut={isLightsOut && choiceSelected} ref={useMeasureRef}>
+			{isLightsOut && choiceSelected && (<animated.div style={styles}></animated.div>)}
 			<TimeBarContainer>
 				<TimeBar delay={delay - SPEED_UP_TIMEBAR} stopBar={isAnswered}></TimeBar>
 			</TimeBarContainer>
@@ -312,7 +312,7 @@ function Question(props: QuestionProps) {
 				<ScoreUpdate showUpdate={props.scoreDelta !== 0 || negSpeedScoreDelta}
 					negative={negScoreDelta || negSpeedScoreDelta}><div>{posScoreDelta ? "+" : ""}{props.scoreDelta && props.scoreDelta.toLocaleString()}</div>{props.speedScoreDelta != 0 ? (<div>🏎️ {posSpeedScoreDelta ? "+" : ""}{props.speedScoreDelta}</div>) : ""}</ScoreUpdate>
 			</ScoreUpdateContainer>
-			<TextOuter>
+			<TextOuter style={{ height: viewHeight }}>
 				<QuestionTextContainer>
 					<TextContainer>
 						{questionText}
@@ -320,6 +320,7 @@ function Question(props: QuestionProps) {
 					<AuthorContainer>
 						~{author}
 					</AuthorContainer>
+					{isSplitBrain && splitBrainSecondHalf && (<SplitBrainCover></SplitBrainCover>)}
 				</QuestionTextContainer>
 				<AnswersOuterContainer>
 					{stateChoices.map((d, i) => {
@@ -330,6 +331,7 @@ function Question(props: QuestionProps) {
 							</animated.div>
 						</IndividualAnswerContainer>);
 					})}
+					{isSplitBrain && !splitBrainSecondHalf && (<SplitBrainCover></SplitBrainCover>)}
 				</AnswersOuterContainer>
 			</TextOuter>
 		</ParentContainer>

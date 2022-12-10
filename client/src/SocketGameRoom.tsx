@@ -11,8 +11,12 @@ import { useSpring, animated } from "react-spring";
 import GameMultiplayer from "./GameMultiplayer";
 import SvgButton from "./components/SvgButton";
 import { device } from './service/deviceService';
-import MissingGameModal from "./components/MissingGameModal";
+import TriviaQuoteModal from "./components/TriviaQuoteModal";
 import { useNavigate } from "react-router-dom";
+import { use100vh } from 'react-div-100vh'
+import ClientConstants from "./ClientConstants";
+import { Link } from "react-router-dom";
+import HelpModal from "./components/HelpModal";
 
 interface SocketGameRoomProps {
 	gameId: string;
@@ -124,11 +128,9 @@ const LinkCopiedContainer = styled.span`
 		margin-left: 6px;
 		margin-top: 5px;
   	}
-	
 `;
 
 const UpperContainer = styled.div`
-	min-height: 80vh;
 	width: 100%;	
 `;
 
@@ -141,10 +143,21 @@ const LowerContainer = styled.div`
   margin-top: 10px;
 `;
 
+const ReturnHomeLink = styled.div`
+position:absolute;
+top:0px;
+right:10px;`;
+
+const HelpModalContainer = styled.div`
+position:absolute;
+top:0px;
+left:10px;`;
+
 
 function SocketGameRoom(props: SocketGameRoomProps) {
 	const { gameId } = props;
 
+	const viewHeight = `${use100vh() * .7}px`;
 	const navigate = useNavigate();
 	const [socketClosed, setSocketClosed] = useState(false);
 	const { sendMessage, lastJsonMessage, readyState } = useWebSocket(
@@ -159,7 +172,8 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 	const [gameRoomInfo, setGameRoomInfo] = useState(props.gameRoomInfo);
 	const [gameStarted, setGameStarted] = useState(false);
 	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
-
+	const [existingInterval, setExistingInterval] = useState(null);
+	const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
 	const send = (msg: SocketMessagesUnion) => {
 		sendMessage(JSON.stringify(msg));
@@ -171,6 +185,20 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 		const startGame = { msgType: "startGame" };
 		sendMessage(JSON.stringify(startGame));
 	};
+
+	useEffect(() => {
+		if (!gameStarted && !existingInterval) {
+			// every 30 seconds
+			const newInterval = window.setInterval(() => {
+				sendMessage(JSON.stringify({
+					msgType: "ping"
+				}))
+			}, ClientConstants.KEEP_ALIVE_INTERVAL);
+			setExistingInterval(newInterval);
+		} else {
+			window.clearInterval(existingInterval);
+		}
+	}, [gameStarted]);
 
 	useEffect(() => {
 		const updatePlayerInfoMsg = {
@@ -213,7 +241,6 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 			from: { opacity: 0 }
 		}
 	});
-
 
 	const getLowerContainerContent = () => {
 		if (gameStarting.starting) {
@@ -265,12 +292,12 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 	if (socketClosed) {
 		const closeGameMessage = gameStarted ? "Game connection lost" : "Host closed the game";
 
-		return (<MissingGameModal
+		return (<TriviaQuoteModal
 			isOpen={!!socketClosed}
 			text={closeGameMessage}
 			onClose={() => {
 				navigate('/');
-			}}></MissingGameModal>);
+			}}></TriviaQuoteModal>);
 	}
 
 	if (gameStarted) {
@@ -278,23 +305,31 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 			send={send}></GameMultiplayer>);
 	}
 
-	return (<GameRoomContainer><UpperContainer><PlayerSelectContainer><Player onChange={setPlayerInfo} disabled={gameStarting.starting}></Player></PlayerSelectContainer>
-		<RowsContainer>
-			{gameRoomInfo.players.filter((p) => {
-				return p.playerId !== gameRoomInfo.yourPlayerId;
-			})
-			.map((p, i) => {
-				return (<PlayerRow key={i}>
-					<PlayerContainer>
-						<svg viewBox="0 0 100 100">
-							<circle cx="50" cy="50" r="48" />
-							<Avatar avatarId={p.playerAvatar}></Avatar>
-						</svg>
-					</PlayerContainer>
-					{p.playerName}
-				</PlayerRow>);
-			})}
-		</RowsContainer></UpperContainer>
+	return (<GameRoomContainer>
+		<HelpModal
+          open={isHelpModalOpen}
+          onClose={() => setIsHelpModalOpen(false)}></HelpModal>
+		<ReturnHomeLink>
+			<Link to={"/"}>Home</Link>
+		</ReturnHomeLink>
+		<HelpModalContainer><Link to={""} onClick={() => setIsHelpModalOpen(true)}>Help</Link></HelpModalContainer>
+		<UpperContainer style={{ minHeight: viewHeight }}><PlayerSelectContainer><Player onChange={setPlayerInfo} disabled={gameStarting.starting}></Player></PlayerSelectContainer>
+			<RowsContainer>
+				{gameRoomInfo.players.filter((p) => {
+					return p.playerId !== gameRoomInfo.yourPlayerId;
+				})
+					.map((p, i) => {
+						return (<PlayerRow key={i}>
+							<PlayerContainer>
+								<svg viewBox="0 0 100 100">
+									<circle cx="50" cy="50" r="48" />
+									<Avatar avatarId={p.playerAvatar}></Avatar>
+								</svg>
+							</PlayerContainer>
+							{p.playerName}
+						</PlayerRow>);
+					})}
+			</RowsContainer></UpperContainer>
 		<LowerContainer>{getLowerContainerContent()}</LowerContainer></GameRoomContainer>);
 }
 

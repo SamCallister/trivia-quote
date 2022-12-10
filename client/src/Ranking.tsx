@@ -27,8 +27,9 @@ const PlayerContainer = styled.div`
 
 const RankNumberContainer = styled.div`
 position:absolute;
-left:-21px;
+left:-18px;
 top:0px;
+font-size:12px;
 `;
 
 
@@ -60,7 +61,7 @@ function Ranking(props: RankingProps) {
 			<RowsContainer>
 				{rankingArray.map((rankingInfo, i) => {
 					return (<PlayerRow key={i}>
-						<RankNumberContainer>{i + 1}{numToSuffix[i + 1]}</RankNumberContainer>
+						<RankNumberContainer>{i + 1}{numToSuffix[i + 1] || "th"}</RankNumberContainer>
 						<PlayerContainer>
 							<PlayerView avatarId={rankingInfo.playerAvatar}></PlayerView>
 						</PlayerContainer>

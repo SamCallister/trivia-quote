@@ -16,10 +16,9 @@ const PlayerContainer = styled.div`
 
 const OuterContainer = styled.div`
 	width: 100%;
-`
+`;
 
 interface ArrowContainerProps {
-	show: boolean;
 	disabled?: boolean;
 };
 
@@ -34,7 +33,6 @@ interface PlayerProps {
 
 const ArrowContainer = styled.div<ArrowContainerProps>`
   align-self: center;
-  visibility: ${props => props.show ? "visible" : "hidden"};
   font-size: 24px;
 `;
 
@@ -76,10 +74,17 @@ function Player(props: PlayerProps) {
 			return;
 		}
 
-		const newCharIndex = avatarIndex + direction;
-		const boundedCharIndex = min([max([newCharIndex, 0]), avatarIds.length - 1]);
-		setPlayerInfoWrapper(merge({}, playerInfo, { playerAvatar: avatarIds[boundedCharIndex] }));
-		setAvatarIndex(boundedCharIndex);
+		let newCharIndex = avatarIndex + direction;
+		if (newCharIndex < 0) {
+			newCharIndex = avatarIds.length - 1;
+		}
+
+		if (newCharIndex >= avatarIds.length) {
+			newCharIndex = 0;
+		}
+
+		setPlayerInfoWrapper(merge({}, playerInfo, { playerAvatar: avatarIds[newCharIndex] }));
+		setAvatarIndex(newCharIndex);
 	};
 
 	const inputChangeFunc = (v:string) => {
@@ -96,12 +101,12 @@ function Player(props: PlayerProps) {
 	return (
 		<OuterContainer>
 			<PlayerContainer>
-				<ArrowContainer show={avatarIndex > 0}><FaArrowLeft onClick={moveCharIndex.bind(this, -1)}></FaArrowLeft></ArrowContainer>
+				<ArrowContainer><FaArrowLeft onClick={moveCharIndex.bind(this, -1)}></FaArrowLeft></ArrowContainer>
 				<svg viewBox="0 0 100 100">
 					<circle cx="50" cy="50" r="48" />
 					<Avatar avatarId={avatarIds[avatarIndex]}></Avatar>
 				</svg>
-				<ArrowContainer show={avatarIndex < avatarIds.length - 1} disabled={props.disabled}><FaArrowRight onClick={moveCharIndex.bind(this, 1)}></FaArrowRight></ArrowContainer>
+				<ArrowContainer disabled={props.disabled}><FaArrowRight onClick={moveCharIndex.bind(this, 1)}></FaArrowRight></ArrowContainer>
 			</PlayerContainer>
 			<LowerContainer>
 				<PlateContainer>

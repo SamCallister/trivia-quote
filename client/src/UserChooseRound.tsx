@@ -13,11 +13,11 @@ interface CategoryProps {
 }
 
 const Category = styled.div<CategoryProps>`
-font-size: ${props => props.theme.h2.fontSize};
+font-size: 24px;
 background-color: white;
 outline: ${props => props.isSelected ? "5px solid #B8860B" : "1px solid black"};
 padding: 16px;
-margin-top: 24px;
+margin-top: 14px;
 margin-bottom: 5px;
 width: 70%;
 text-align:center;
