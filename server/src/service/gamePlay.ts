@@ -1,4 +1,4 @@
-import { concat, mapValues, keys, random, sampleSize, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, get } from 'lodash';
+import { concat, mapValues, keys, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, get, toPairs, flatMap } from 'lodash';
 import * as ws from 'ws';
 import constants from '../constants';
 import buildGame from './buildGame';
@@ -47,8 +47,6 @@ interface QuestionImpactedPlayers {
 }
 
 class SinglePlayerGame {
-	gameData: GameData;
-	topics: string[];
 	currentRound: number;
 	actions: SocketMessagesUnion[];
 	eventLoopCount: number;
@@ -59,9 +57,7 @@ class SinglePlayerGame {
 	gameId: string;
 	currentQuestionAfterEffects?: QuestionImpactedPlayers;
 
-	constructor(gameData: GameData, gameId: string) {
-		this.gameData = gameData;
-		this.topics = keys(gameData);
+	constructor(gameId: string) {
 		this.currentRound = 0;
 		this.actions = [];
 		this.eventLoopCount = 0;
@@ -89,7 +85,6 @@ class SinglePlayerGame {
 				if (!currentQuestion.firstAnswerPlayerId) {
 					currentQuestion.firstAnswerPlayerId = playerId;
 				}
-
 			}
 
 			// change the question once everyone has answered, otherwise wait until the time expires
@@ -100,6 +95,15 @@ class SinglePlayerGame {
 				this.messageLoop();
 			}
 		}
+	}
+
+	buildQuestionMessages(questions: QuestionGameData[]) {
+		return this.addQuestionModifiers(
+			flatMap(
+				questions,
+				this.formatQuestion.bind(this)
+			)
+		);
 	}
 
 	userRoundChoice(categoryId: string, playerId: string) {
@@ -115,7 +119,7 @@ class SinglePlayerGame {
 			).then((questions: QuestionGameData[]) => {
 				this.currentRound += 1;
 				this.actions = concat(this.actions,
-					this.addQuestionModifiers(questions.map(this.formatQuestion.bind(this)))
+					this.buildQuestionMessages(questions)
 				);
 			});
 
@@ -172,30 +176,47 @@ class SinglePlayerGame {
 		})
 	}
 
-	randomTopic(): string {
-		const end = this.topics.length - 1;
-		const i = random(0, end);
-		// mutate! topics
-		const chosenTopic = this.topics.splice(i, 1)[0];
-
-		return chosenTopic;
-	}
-
-	formatQuestion(d: QuestionGameData): QuestionMessage {
-		return {
+	// returns up to 2 QuestionMessages depending on if there is an author question or not
+	formatQuestion(d: QuestionGameData): QuestionMessage[] {
+		const blankQuestion: QuestionMessage = {
 			msgType: 'question',
 			delay: constants.QUESTION_DELAY,
 			value: {
 				text: d.text,
+				questionType: 'quoteBlanks',
 				author: d.author,
 				id: d.id,
 				choices: shuffle(d.choices.map((c) => {
 					return merge({}, c, { text: c.text.split(",").join(", ") });
 				})),
-				roundNumber: this.currentRound
+				roundNumber: this.currentRound,
+				completeText: ""
 			},
 			answerId: d.answerId
 		};
+
+		if (d.authorChoices) {
+			// need to remove the author if we are going to be asking it next
+			blankQuestion.value.author = "";
+			const authorQuestion: QuestionMessage = {
+				msgType: 'question',
+				delay: constants.QUESTION_DELAY,
+				value: {
+					text: d.text,
+					questionType: 'authorBlank',
+					author: "",
+					id: `${d.id}-author`,
+					choices: d.authorChoices,
+					roundNumber: this.currentRound,
+					completeText: d.completeText
+				},
+				answerId: d.authorAnswerId
+			};
+
+			return [blankQuestion, authorQuestion];
+		} else {
+			return [blankQuestion];
+		}
 	}
 
 	addQuestionModifiers(questions: QuestionMessage[]) {
@@ -218,26 +239,33 @@ class SinglePlayerGame {
 		return messages;
 	}
 
-	// builds round, adding messages to action queue
-	setupRound(chosenTopic: string) {
-		this.currentRound += 1;
+	setupRandomRound() {
+		return buildGame.getRandomCategories(1, constants.QUESTIONS_PER_CATEGORY, this.seenCategories)
+			.then((gameData: GameData) => {
+				this.currentRound += 1;
+				const categoryAndQuestion = first(toPairs(gameData));
 
-		const questions = sampleSize(this.gameData[chosenTopic], constants.QUESTIONS_PER_CATEGORY);
+				if (!categoryAndQuestion) {
+					throw new Error(`In setupRandomRound with null categoryAndQuestion`);
+				}
+				const [category, questions] = categoryAndQuestion;
 
-		// choose 3 questions
-		const formattedQuestions: QuestionMessage[] = questions.map(this.formatQuestion.bind(this));
+				this.seenCategories.push(category);
 
-		const roundMsg: StaticRoundMessage = {
-			msgType: "staticRound",
-			delay: constants.ROUND_DELAY,
-			value: {
-				title: `Round ${this.currentRound}`,
-				category: chosenTopic,
-				roundNumber: this.currentRound
-			}
-		};
+				const questionActions = this.buildQuestionMessages(questions);
 
-		this.actions = concat(this.actions, [roundMsg], this.addQuestionModifiers(formattedQuestions));
+				const roundMsg: StaticRoundMessage = {
+					msgType: "staticRound",
+					delay: constants.ROUND_DELAY,
+					value: {
+						title: `Round ${this.currentRound}`,
+						category: category,
+						roundNumber: this.currentRound
+					}
+				};
+
+				this.actions = concat(this.actions, [roundMsg], questionActions);
+			});
 	}
 
 	preSendEffects(msg: SocketMessagesUnion) {
@@ -529,7 +557,8 @@ class SinglePlayerGame {
 						this.userChoice(last(this.getRankingInfo()), "Loser's Choice");
 
 					} else {
-						this.setupRound(this.randomTopic());
+						// go get data
+						this.setupRandomRound();
 					}
 
 				} else if (this.currentMessage.msgType !== "finalScore") {
@@ -597,20 +626,20 @@ class SinglePlayerGame {
 
 	start(delay: number) {
 		setTimeout(() => {
-			const chosenTopic = this.randomTopic();
-			this.setupRound(chosenTopic);
 			this.messageLoop();
 		}, delay);
 	}
 }
 
 
-function initGame(data: GameData, gameId: string) {
+function initGame(gameId: string) {
 	// choose random topic and 3 questions
-	const game = new SinglePlayerGame(data, gameId);
-	game.seenCategories = keys(data);
+	const game = new SinglePlayerGame(gameId);
 
-	return game;
+	return game.setupRandomRound()
+		.then(() => {
+			return game;
+		});
 }
 
 export default { initGame };

@@ -4,8 +4,6 @@ import styled from "styled-components";
 import SvgButton from "./components/SvgButton";
 import { useNavigate } from "react-router-dom";
 import { device } from './service/deviceService';
-import { avatarIds } from "./components/Avatar";
-import { min, max, merge, findIndex } from "lodash";
 import axios from "axios";
 import TriviaQuoteModal from './components/TriviaQuoteModal';
 import Player from "./components/Player";
@@ -82,7 +80,7 @@ left:10px;`;
 
 
 function Home() {
-  const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());
+  const playerInfo = useState(localPlayerInfo.getPlayerInfo())[0];
  
   const [isMissingGameModalOpen, setMissingGameModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);

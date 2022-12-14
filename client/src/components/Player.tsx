@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { FaArrowLeft, FaArrowRight } from "react-icons/fa";
-import { min, max, merge, findIndex } from "lodash";
+import { merge, findIndex } from "lodash";
 import { Avatar, avatarIds } from "./Avatar";
 import NamePlate from "./NamePlate";
 import { useLocalStorage } from "../hooks/localStorage";

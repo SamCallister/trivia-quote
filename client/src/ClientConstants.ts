@@ -1,3 +1,4 @@
 export default {
-	KEEP_ALIVE_INTERVAL: 30 * 1000
+	KEEP_ALIVE_INTERVAL: 30 * 1000,
+	CHAR_WIDTH: 0.6
 };

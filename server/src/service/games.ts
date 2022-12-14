@@ -2,8 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { values, omit, forOwn, merge, keys, map } from 'lodash';
 import * as ws from 'ws';
 import gamePlay from './gamePlay';
-import buildGame from './buildGame';
-import constants from '../constants';
 import loggerService from './logger';
 
 interface PlayerInfo {
@@ -131,13 +129,9 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 				}
 
 				// init gamePlay
-				buildGame.getRandomCategories(
-					constants.NUM_STARTING_CATEGORIES,
-					constants.QUESTIONS_PER_CATEGORY,
-					[]
-				).then((gameData) => {
-					const newGame = gamePlay.initGame(gameData, gameId);
-					newGame.seenCategories.push(...keys(gameData));
+				gamePlay.initGame(
+					gameId
+				).then((newGame) => {
 
 					forOwn(currentGames[gameId].players, (value, playerId) => {
 

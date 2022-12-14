@@ -23,6 +23,8 @@ interface QuestionChoice {
 	id: string;
 }
 
+type QuestionType = "quoteBlanks" | "authorBlank";
+
 interface QuestionMessageValue {
 	text: string;
 	author: string;
@@ -30,6 +32,8 @@ interface QuestionMessageValue {
 	roundNumber: number;
 	choices: Array<QuestionChoice>;
 	modifiedDisplay?: string;
+	questionType: QuestionType;
+	completeText: string;
 }
 
 interface MessageData {

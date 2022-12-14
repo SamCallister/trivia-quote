@@ -29,6 +29,8 @@ interface QuestionGameData {
 	answerId: string;
 	author: string;
 	choices: QuestionChoice[];
+	authorChoices: QuestionChoice[];
+	completeText: string;
 }
 
 interface GameData {
@@ -49,6 +51,8 @@ interface QuestionChoice {
 
 type ModifiedDisplay = "lightsOut" | "splitBrain" | "memoryLoss";
 
+type QuestionType = "quoteBlanks" | "authorBlank";
+
 interface QuestionMessageValue {
 	text: string;
 	author: string;
@@ -58,6 +62,8 @@ interface QuestionMessageValue {
 	questionPointTransforms?: QuestionPointTransforms;
 	modifiedDisplay?: ModifiedDisplay;
 	questionAfterEffects?: QuestionAfterEffects;
+	questionType: QuestionType;
+	completeText: string;
 }
 
 interface MessageData {

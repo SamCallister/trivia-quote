@@ -15,7 +15,10 @@ interface QuestionsData {
 	author: string;
 	id: string;
 	choices: string;
+	authorChoices: string;
 	answerId: string;
+	authorAnswerId: string;
+	completeText: string;
 }
 
 function getRandomCategories(
@@ -43,11 +46,15 @@ SELECT category, JSON_GROUP_ARRAY(JSON_OBJECT(
 	,'id', id
 	,'choices', choices
 	,'answerId', answerId
+	,'authorChoices', authorChoices
+	,'authorAnswerId', authorAnswerId
+	,'completeText', completeText
 )) as questions
 FROM row_num_by_group 
 WHERE row_num <= ${questionsPerCategory}
 and category not in (${seenCategoryIds.map((c) => "'" + c + "'")
-	.join(',')})
+			.join(',')})
+			and category='Roman Philosophy'
 GROUP BY category
 ORDER BY RANDOM() DESC
 LIMIT ${numCategories}`;
@@ -64,12 +71,14 @@ LIMIT ${numCategories}`;
 			// build game data out of rows
 			const gameDataResult = Object.fromEntries(chain(rows)
 				.map((r) => {
-
 					const questionsData = JSON.parse(r.questions) as QuestionsData[];
 					const transformedQuestionsData = questionsData.map((d: QuestionsData) => {
 						return merge(
 							d,
-							{ choices: JSON.parse(d.choices) as QuestionChoice[] }
+							{
+								choices: JSON.parse(d.choices) as QuestionChoice[],
+								authorChoices: JSON.parse(d.authorChoices) as QuestionChoice[]
+							}
 						);
 					});
 
@@ -86,9 +95,9 @@ LIMIT ${numCategories}`;
 }
 
 function getQuestionsForCategory(
-	categoryId:string,
-	questionsPerCategory: number):Promise<QuestionGameData[]> {
-		const randomQuestionsForCategory = `
+	categoryId: string,
+	questionsPerCategory: number): Promise<QuestionGameData[]> {
+	const randomQuestionsForCategory = `
 with added_random_row_num as (
 	SELECT *,
 	ROW_NUMBER() OVER (ORDER BY RANDOM()) as random_row_num
@@ -107,38 +116,44 @@ SELECT JSON_GROUP_ARRAY(JSON_OBJECT(
 	,'id', id
 	,'choices', choices
 	,'answerId', answerId
+	,'authorChoices', authorChoices
+	,'authorAnswerId', authorAnswerId
+	,'completeText', completeText
 )) as questions
 FROM row_num_by_group 
 WHERE row_num <= ${questionsPerCategory} and category='${categoryId}'
 GROUP BY category
 ORDER BY RANDOM() DESC`;
-const db = new sqlite3.Database("questions.db", sqlite3.OPEN_READONLY);
+	const db = new sqlite3.Database("questions.db", sqlite3.OPEN_READONLY);
 
-return new Promise((resolve, reject) => {
-	db.all(randomQuestionsForCategory, (err: Error, rows: QuestionsForCategoriesResult[]) => {
+	return new Promise((resolve, reject) => {
+		db.all(randomQuestionsForCategory, (err: Error, rows: QuestionsForCategoriesResult[]) => {
 
-		if (err) {
-			return reject(err);
-		}
+			if (err) {
+				return reject(err);
+			}
 
-		const firstRow = first(rows);
+			const firstRow = first(rows);
 
-		if (!firstRow) {
-			return reject(new Error(`No data found for category ${categoryId}`));
-		}
+			if (!firstRow) {
+				return reject(new Error(`No data found for category ${categoryId}`));
+			}
 
-		const questionsData = JSON.parse(firstRow.questions) as QuestionsData[];
+			const questionsData = JSON.parse(firstRow.questions) as QuestionsData[];
 
-		const transformedQuestionsData = questionsData.map((d: QuestionsData) => {
-			return merge(
-				d,
-				{ choices: JSON.parse(d.choices) as QuestionChoice[] }
-			);
+			const transformedQuestionsData = questionsData.map((d: QuestionsData) => {
+				return merge(
+					d,
+					{
+						choices: JSON.parse(d.choices) as QuestionChoice[],
+						authorChoices: JSON.parse(d.authorChoices) as QuestionChoice[]
+					}
+				);
+			});
+
+			return resolve(transformedQuestionsData);
 		});
-
-		return resolve(transformedQuestionsData);
 	});
-});
-	}
+}
 
 export default { getRandomCategories, getQuestionsForCategory };

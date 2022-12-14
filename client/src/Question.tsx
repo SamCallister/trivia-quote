@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import TimeBar from "./components/TimeBar";
 import styled from "styled-components";
 import AnswerButton from "./components/AnswerButton";
-import { merge, partial, isNil, isEmpty, head, isNull } from "lodash";
-import questionTextService from './service/questionTextService';
+import { merge, partial, isNil, isNull } from "lodash";
 import { useSpring, animated, useSprings } from 'react-spring'
 import useMeasure from 'react-use-measure';
 import { use100vh } from 'react-div-100vh';
+import QuestionText from "./components/QuestionText";
+import AuthorText from "./components/AuthorText";
 
 const TimeBarContainer = styled.div`
 	height: 28px;
@@ -74,18 +75,6 @@ const ScoreUpdate = styled.span<ShowUpdateProps>`
 	right: 8px;
 `;
 
-interface AnswerUnderlineProps {
-	isAnswered: boolean;
-}
-
-const AnswerUnderline = styled.span<AnswerUnderlineProps>`
-border-bottom: 1px solid black;
-display:inline-block;
-line-height:0.85;
-text-indent: ${props => props.isAnswered ? 0 : "-100000000px"};
-text-align: center;
-`;
-
 interface TimeoutMsgContainerProps {
 	show: boolean;
 }
@@ -134,14 +123,15 @@ interface QuestionProps {
 	choices: QuestionChoice[];
 	onChange: QuestionAnsweredFunc;
 	modifiedDisplay?: string;
+	questionType: QuestionType;
+	completeText: string;
 }
 
-const CHAR_WIDTH = 0.6;
 const SPEED_UP_TIMEBAR = 100;
 
 function Question(props: QuestionProps) {
 
-	const { delay, text, choices, score, onChange, questionId, correctAnswer, author } = props;
+	const { delay, text, choices, score, onChange, questionId, correctAnswer, author, completeText } = props;
 
 	const viewHeight = `${use100vh() * .85}px`;
 	const [useMeasureRef, bounds] = useMeasure()
@@ -241,36 +231,6 @@ function Question(props: QuestionProps) {
 		}
 	};
 
-	const numAnswers = head(choices).text.split(",").map((t: string) => t.trim()).filter((t: string) => !isEmpty(t)).length;
-
-	const getQuestionText = (text: string, choices: QuestionChoice[], answers: string[], isAnswered: boolean) => {
-
-		const splitArray = questionTextService.formatQuestionUnderlines(text, choices.map((d) => d.text), answers);
-		return splitArray.map((d, i) => {
-			const { text, isAnswer, numLetters } = d;
-
-			if (isAnswer) {
-				return (<AnswerUnderline key={i} style={{ width: `${numLetters * CHAR_WIDTH}em` }} isAnswered={isAnswered}>{text}</AnswerUnderline>);
-			} else {
-				return (<span key={i}>{text}</span>);
-			}
-		});
-	};
-
-	let questionText;
-	if (!isAnswered) {
-		questionText = getQuestionText(text, choices, Array(numAnswers).fill("X"), isAnswered);
-	}
-
-	if (isAnswered) {
-		// question text fill the the answer
-		const correctChoice = choices.find((d) => {
-			return d.id === correctAnswer;
-		});
-		const correctAnswerArray = correctChoice.text.split(",").map((t) => t.trim()).filter((t) => !isEmpty(t))
-		questionText = getQuestionText(text, choices, correctAnswerArray, isAnswered);
-	}
-
 	if (isAnswered && !updatedWithAnswer) {
 		const updateChoices = stateChoices.map((d) => {
 			const isCorrect = correctAnswer === d.id;
@@ -288,7 +248,6 @@ function Question(props: QuestionProps) {
 			} else {
 				return d;
 			}
-
 
 		});
 		setUpdatecWithAnswer(true);
@@ -315,10 +274,18 @@ function Question(props: QuestionProps) {
 			<TextOuter style={{ height: viewHeight }}>
 				<QuestionTextContainer>
 					<TextContainer>
-						{questionText}
+						<QuestionText questionType={props.questionType}
+						isAnswered={isAnswered}
+						choices={choices}
+						text={text}
+						completeText={completeText}
+						correctAnswer={correctAnswer}></QuestionText>
 					</TextContainer>
 					<AuthorContainer>
-						~{author}
+						<AuthorText author={author}
+						questionType={props.questionType}
+						authorChoices={props.choices}
+						correctAuthor={correctAnswer}></AuthorText>
 					</AuthorContainer>
 					{isSplitBrain && splitBrainSecondHalf && (<SplitBrainCover></SplitBrainCover>)}
 				</QuestionTextContainer>

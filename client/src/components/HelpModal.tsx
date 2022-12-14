@@ -20,7 +20,7 @@ const MarkdownContainer = styled.div`
 const helpText = `
 # Trivia Quote Gameplay
 
-- A game is 3 rounds with 3 questions each
+- A game is 3 rounds with 3-6 questions each
 - The first player to answer gets bonus points if they answer correctly 🏎️
 - Look out for questions worth double or triple points 🤑
 - Watch out for curses 💀

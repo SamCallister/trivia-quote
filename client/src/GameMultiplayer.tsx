@@ -117,7 +117,9 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 					questionId={prevQuestion.value.id} choices={prevQuestion.value.choices} score={score.toLocaleString()} onChange={questionAnswered} correctAnswer={data.msgType === "questionResult" ? data.value.answerId : null}
 					scoreDelta={scoreDelta}
 					speedScoreDelta={speedScoreDelta}
-					modifiedDisplay={modifiedDisplay}></Question>
+					modifiedDisplay={modifiedDisplay}
+					questionType={prevQuestion.value.questionType}
+					completeText={prevQuestion.value.completeText}></Question>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={prevQuestion.value.roundNumber}></RoundIndicator>
 				</IndicatorContainer>

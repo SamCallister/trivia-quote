@@ -1,9 +1,3 @@
-#  "category": d["category"],
-#         "text": d["template"],
-#         "author": d["author"],
-#         "id": str(uuid.uuid4()),
-#         "choices":  json.dumps(final_choices + [answer_choice]),
-#         "answerId": answer_choice_id
 import json
 from functools import reduce
 import re
@@ -39,6 +33,9 @@ def validate_blanks(s, choices):
 		matches = re.findall(re.compile(pattern), s)
 		assert len(matches) == 1, f"expected: {pattern} to be present in: {s}"
 
+def validate_answer_matches(answerId, choices):
+	assert len([c for c in choices if c["id"] == answerId]) == 1, f"expected once choice from choices:{choices} to match:{answerId}"
+
 
 def validate_final_data(questions):
 	# check for funky characters
@@ -59,17 +56,22 @@ def validate_final_data(questions):
 
 		validate_length(q["author"], MAX_AUTHOR_LENGTH)
 
-		choices = json.loads(q['choices'])
-		for c in choices:
-			try:
-				validate_ascii(c["text"])
-			except:
-				print("error validating question author for choice", choices)
-				raise
-			validate_length(c["text"], MAX_CHOICE_LENGTH)
+		for choices, answerId in filter(lambda x: x[0], [
+			(json.loads(q['choices']), q['answerId']),
+			(json.loads(q['authorChoices']), q['authorAnswerId'])
+		]):
+			validate_answer_matches(answerId, choices)
+			for c in choices:
+				try:
+					validate_ascii(c["text"])
+				except:
+					print("error validating question author for choice", choices)
+					raise
+				validate_length(c["text"], MAX_CHOICE_LENGTH)
 
-		validate_choices(choices)
-		validate_blanks(q["text"], choices)
+			validate_choices(choices)
+
+		validate_blanks(q["text"], json.loads(q['choices']))
 
 def validate_categories(df):
 	# each category group should have at least 5 items
