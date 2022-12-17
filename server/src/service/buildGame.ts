@@ -54,7 +54,6 @@ FROM row_num_by_group
 WHERE row_num <= ${questionsPerCategory}
 and category not in (${seenCategoryIds.map((c) => "'" + c + "'")
 			.join(',')})
-			and category='Roman Philosophy'
 GROUP BY category
 ORDER BY RANDOM() DESC
 LIMIT ${numCategories}`;

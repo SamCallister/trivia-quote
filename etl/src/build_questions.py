@@ -1,5 +1,4 @@
 import pandas as pd
-from collections import defaultdict
 import json
 from pathlib import Path
 import uuid
@@ -22,7 +21,8 @@ def build_choice(author):
 
 
 df = pd.read_csv('data/newQuotes.csv')
-validate_df(df)
+# filter and validate
+df = validate_df(df)
 records = df.to_dict('records')
 
 l = [

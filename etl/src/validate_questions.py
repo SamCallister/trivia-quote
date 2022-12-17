@@ -76,9 +76,15 @@ def validate_final_data(questions):
 def validate_categories(df):
 	# each category group should have at least 5 items
 	counts_df = df.groupby(["category"])["category"].count()
+	categories_to_filter = []
 	for category_name, count in counts_df.to_dict().items():
-		assert count >= MIN_QUESTION_PER_CATEGORY, f"Expcted cateogry: {category_name} to have at least {MIN_QUESTION_PER_CATEGORY} questions but it only had {count}"
+		if count < MIN_QUESTION_PER_CATEGORY:
+			print(f"Expcted cateogry: {category_name} to have at least {MIN_QUESTION_PER_CATEGORY} questions but it only had {count}")
+			categories_to_filter.append(category_name)
+
 		assert category_name[0].isupper(), "expected category: {category_name} to be capitalized"
+
+	return df[~df["category"].isin(categories_to_filter)]
 
 	
 
@@ -88,5 +94,5 @@ def validate_no_dupes(df):
 
 
 def validate_df(df):
-	validate_categories(df)
 	validate_no_dupes(df)
+	return validate_categories(df)

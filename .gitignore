@@ -38,3 +38,5 @@ cdk/node_modules
 server/questions.db
 
 __pycache__
+
+etl/data/*.csv

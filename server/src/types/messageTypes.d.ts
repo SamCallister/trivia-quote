@@ -31,6 +31,7 @@ interface QuestionGameData {
 	choices: QuestionChoice[];
 	authorChoices: QuestionChoice[];
 	completeText: string;
+	authorAnswerId: string;
 }
 
 interface GameData {
