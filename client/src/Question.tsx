@@ -35,6 +35,7 @@ const AnswersOuterContainer = styled.div`
 	flex-direction:column;
 	z-index:2;
 	position: relative;
+	width: 100%;
 `;
 
 const IndividualAnswerContainer = styled.div`

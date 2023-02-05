@@ -469,7 +469,7 @@ class SinglePlayerGame {
 
 		const toSend = {
 			msgType: "userChoiceRound",
-			delay: constants.QUESTION_DELAY,
+			delay: constants.CHOOSE_ROUND_DELAY,
 			value: {
 				titleText: title,
 				playerName: playerInfo.playerName,

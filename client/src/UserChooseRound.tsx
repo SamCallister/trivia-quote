@@ -51,6 +51,7 @@ const ChooseCategoryContainer = styled.div`
 
 const TimeBarContainer = styled.div`
 	height: 28px;
+	width: 100%;
 `;
 
 interface ChoseRoundFunc {

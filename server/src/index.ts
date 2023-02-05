@@ -81,7 +81,6 @@ router.ws('/ws/:gameId', (ws, req) => {
 		req.cookies[constants.PLAYER_ID_COOKIE_ID],
 		ws
 	);
-
 });
 
 // Now we can tell the app to use our routing code:
@@ -89,6 +88,10 @@ app.use(router);
 
 // express-winston errorLogger makes sense AFTER the router.
 app.use(loggerService.buildExpressErrorLogger(LOG_PATH));
+
+app.use((req, res) => {
+	res.sendFile('public/index.html', { root: __dirname });
+});
 
 app.listen(port, () => {
 	loggerService.getLogger().info(`[server]: Server is running at https://localhost:${port}`);
