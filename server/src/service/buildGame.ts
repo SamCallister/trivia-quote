@@ -1,5 +1,6 @@
 import { chain, first, merge } from 'lodash';
 import * as sqlite3 from 'sqlite3';
+import { GameData, QuestionChoice, QuestionGameData } from '../types/messageTypes';
 
 interface GameRows {
 	category: string;

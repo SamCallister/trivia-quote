@@ -1,23 +1,11 @@
 import { concat, mapValues, keys, merge, forOwn, last, isUndefined, map, pickBy, isEmpty, sortBy, values, shuffle, first, sample, get, toPairs, flatMap } from 'lodash';
-import * as ws from 'ws';
 import constants from '../constants';
 import buildGame from './buildGame';
 import loggerService from './logger';
 import modifiersService from './modifiers';
 import logger from './logger';
-
-interface Player {
-	playerId: string;
-	playerName: string;
-	playerAvatar: string;
-	isFakePlayer: boolean;
-	socket: ws.WebSocket;
-	playerScore: number;
-}
-
-interface Players {
-	[playerId: string]: Player;
-}
+import { WrappedSocket, QuestionPointTransforms, QuestionAfterEffects, SocketMessagesUnion, ModifiedDisplay, QuestionGameData, QuestionMessage, StaticRoundMessage, GameData, PointTransformer, PlayerRankingInfo, UserChoiceRoundMessage, JoinGameMessage, ServerMessageTypeUnion, Players } from '../types/messageTypes';
+import aiLogicService from './aiLogicService';
 
 interface PlayerAnswers {
 	[playerId: string]: string;
@@ -30,6 +18,7 @@ interface QuestionHistory {
 	firstAnswerPlayerId?: string;
 	questionPointTransforms?: QuestionPointTransforms;
 	questionAfterEffects?: QuestionAfterEffects;
+	timestamp: number
 }
 
 interface PlayerToMessage {
@@ -46,8 +35,9 @@ interface QuestionImpactedPlayers {
 	modifiedDisplay: ModifiedDisplay;
 }
 
-class SinglePlayerGame {
+class Game {
 	currentRound: number;
+	gameVsAi: boolean;
 	actions: SocketMessagesUnion[];
 	eventLoopCount: number;
 	currentMessage: SocketMessagesUnion | null;
@@ -66,6 +56,7 @@ class SinglePlayerGame {
 		this.questionHistory = [];
 		this.seenCategories = [];
 		this.gameId = gameId;
+		this.gameVsAi = false;
 	}
 
 	answerMatchesCurrentMsgQuestion(questionId: string): boolean {
@@ -82,7 +73,25 @@ class SinglePlayerGame {
 				throw new Error("questionHistory is empty, expected at least one value")
 			} else if (isUndefined(currentQuestion.playerAnswers[playerId])) {
 				currentQuestion.playerAnswers[playerId] = answerId;
-				if (!currentQuestion.firstAnswerPlayerId) {
+
+				if (this.gameVsAi) {
+					const currentTime = Date.now();
+					const questionStartTime: number = (
+						last(this.questionHistory) || {
+							timestamp: currentTime
+						}
+					).timestamp;
+
+					const elapsedTime = currentTime - questionStartTime;
+					const {humanPlayerId, aiPlayerIds} = aiLogicService.getAiAndHumanPlayerIds(this.players);
+
+					currentQuestion.firstAnswerPlayerId = aiLogicService.determineFirstAnswer(
+						aiPlayerIds,
+						humanPlayerId,
+						elapsedTime
+					)
+				}
+				else if (!currentQuestion.firstAnswerPlayerId) {
 					currentQuestion.firstAnswerPlayerId = playerId;
 				}
 			}
@@ -276,7 +285,8 @@ class SinglePlayerGame {
 				answerId: msg.answerId,
 				playerAnswers: {},
 				questionPointTransforms: msg.value.questionPointTransforms,
-				questionAfterEffects: msg.value.questionAfterEffects
+				questionAfterEffects: msg.value.questionAfterEffects,
+				timestamp: Date.now()
 			};
 
 			// all the fake players answer
@@ -290,6 +300,15 @@ class SinglePlayerGame {
 			});
 
 			this.questionHistory.push(questionEntry);
+		} else if (msg.msgType === "userChoiceRound" && this.players[msg.value.chosenPlayer].isFakePlayer) {
+			// ai player should choose round immediately
+			setTimeout(() => {
+				this.userRoundChoice(
+					(sample(msg.value.categories) || { categoryId: "Success" }).categoryId,
+					msg.value.chosenPlayer
+				)
+			}, constants.AI_WAIT_TO_CHOOSE_ROUND_MILIS);
+
 		}
 	}
 
@@ -311,8 +330,6 @@ class SinglePlayerGame {
 			}
 			// for each player check the question
 			const result = map(this.players, (player, playerId) => {
-
-
 				const identityInt = (n: number) => n;
 
 				const correct = currentQuestion.playerAnswers[playerId] === currentQuestion.answerId;
@@ -525,6 +542,17 @@ class SinglePlayerGame {
 				if (!lastQuestion) {
 					throw new Error("lastQuestion is null or undefined");
 				} else {
+					if (this.gameVsAi) {
+						const currentQuestion = last(this.questionHistory);
+						
+						if (!currentQuestion) {
+							throw new Error("currentQuestion is null or undefined");
+						} else {
+							const {aiPlayerIds} = aiLogicService.getAiAndHumanPlayerIds(this.players);
+							currentQuestion.firstAnswerPlayerId = sample(aiPlayerIds);
+						}
+					}
+
 					this.evaluateQuestionResult(lastQuestion);
 				}
 			} else if (this.currentMessage.msgType === "userChoiceRound") {
@@ -609,7 +637,7 @@ class SinglePlayerGame {
 		}
 	}
 
-	joinGame(socket: ws.WebSocket, msgData: JoinGameMessage) {
+	joinGame(socket: WrappedSocket, msgData: JoinGameMessage) {
 		const { playerId, playerName, playerAvatar, isFakePlayer } = msgData.value;
 
 		// call socket.onmessage to send messages to the client
@@ -624,7 +652,8 @@ class SinglePlayerGame {
 		this.players[playerId] = { playerId, playerName, playerAvatar, isFakePlayer: booleanIsFakePlayer, socket, playerScore: 0 };
 	}
 
-	start(delay: number) {
+	start(delay: number, gameVsAi: boolean) {
+		this.gameVsAi = gameVsAi;
 		setTimeout(() => {
 			this.messageLoop();
 		}, delay);
@@ -634,7 +663,7 @@ class SinglePlayerGame {
 
 function initGame(gameId: string) {
 	// choose random topic and 3 questions
-	const game = new SinglePlayerGame(gameId);
+	const game = new Game(gameId);
 
 	return game.setupRandomRound()
 		.then(() => {

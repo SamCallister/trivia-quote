@@ -2,6 +2,7 @@ import React from "react";
 import { take } from "lodash";
 import styled from "styled-components";
 import PlayerView from "./components/PlayerView";
+import ClientConstants from "./ClientConstants";
 
 interface RankingProps {
 	ranking: PlayerRankingInfo[]
@@ -10,7 +11,6 @@ interface SuffixMap {
 	[index: number]: string;
 }
 
-const maxNumberToShow = 3;
 const numToSuffix: SuffixMap = {
 	1: "st",
 	2: "nd",
@@ -54,7 +54,10 @@ const PlayerNameContainer = styled.span`
 `;
 
 function Ranking(props: RankingProps) {
-	const rankingArray: PlayerRankingInfo[] = take(props.ranking, maxNumberToShow);
+	const rankingArray: PlayerRankingInfo[] = take(
+		props.ranking,
+		ClientConstants.MAX_NUM_PLAYERS_ON_RANKING_PAGE
+	);
 
 	return (<div>
 		<div>

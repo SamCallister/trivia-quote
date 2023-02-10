@@ -5,6 +5,7 @@ import axios, { AxiosError } from "axios";
 import TriviaQuoteModal from "./components/TriviaQuoteModal";
 import localPlayerInfo from "./service/localPlayerInfo";
 import SocketGameRoom from "./SocketGameRoom";
+import { Title } from './components/Components';
 
 
 const axiosConfig = {
@@ -42,7 +43,7 @@ function GameRoom() {
 
 	if (!gameRoomInfo) {
 		return (<div>
-			{!missingGameId && (<span>loading...</span>)}
+			{!missingGameId && (<Title>loading...</Title>)}
 			<TriviaQuoteModal
 				isOpen={!!missingGameId}
 				text={`Game ${missingGameId} does not exist.`}

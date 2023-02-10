@@ -1,5 +1,6 @@
 import { sample, identity, cloneDeep, concat } from 'lodash';
 import constants from '../constants';
+import { QuestionModifierMessage } from '../types/messageTypes';
 
 const randomCurses:QuestionModifierMessage[] = [
 	{

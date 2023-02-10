@@ -1,3 +1,5 @@
+import * as ws from 'ws';
+
 interface MessageData {
 	msgType: string;
 }
@@ -231,7 +233,7 @@ interface QuestionPointTransforms {
 }
 
 interface AfterQuestionFunction {
-	(data: PlayerRankingInfo[], playerId: string, correct:boolean): boolean;
+	(data: PlayerRankingInfo[], playerId: string, correct: boolean): boolean;
 }
 
 interface QuestionAfterEffects {
@@ -286,3 +288,39 @@ interface QuestionData {
 
 
 type ServerMessageTypeUnion = StartGameMessage | PlayerUpdateMessage;
+
+interface OnMessageFuncWrapped {
+	(data: ws.MessageEvent): void;
+}
+
+interface SendFuncWrapped {
+	(data: string): void;
+}
+
+interface OnCloseFuncWrapped {
+	(data: ws.CloseEvent): void;
+}
+
+interface CloseFuncWrapped {
+	(code?: number | undefined, data?: string | Buffer | undefined):void;
+}
+
+interface WrappedSocket {
+	onmessage: OnMessageFuncWrapped | null;
+	send: SendFuncWrapped;
+	onclose: OnCloseFuncWrapped | null;
+	close: CloseFuncWrapped | null;
+}
+
+interface Player {
+	playerId: string;
+	playerName: string;
+	playerAvatar: string;
+	isFakePlayer: boolean;
+	socket: WrappedSocket;
+	playerScore: number;
+}
+
+interface Players {
+	[playerId: string]: Player;
+}

@@ -1,14 +1,16 @@
 import { v4 as uuidv4 } from 'uuid';
-import { values, omit, forOwn, merge, keys, map } from 'lodash';
-import * as ws from 'ws';
+import { values, omit, forOwn, merge, keys, map, range } from 'lodash';
 import gamePlay from './gamePlay';
 import loggerService from './logger';
+import constants from '../constants';
+import fakePlayerService from './fakePlayerService';
+import { GameRoomInfoMessage, ServerMessageTypeUnion, WrappedSocket } from '../types/messageTypes';
 
 interface PlayerInfo {
 	playerName: string;
 	playerAvatar: string;
 	playerId: string;
-	socket?: ws.WebSocket;
+	socket?: WrappedSocket;
 	isHost: boolean;
 }
 
@@ -19,6 +21,7 @@ interface PlayerIdToPlayer {
 interface GameInfo {
 	gameId: string;
 	players: PlayerIdToPlayer;
+	hostPlayerId: string;
 }
 
 interface CurrentGames {
@@ -40,7 +43,8 @@ function createNewGame(playerId: string, playerInfo: PlayerInfo): GameRoomInfoMe
 
 	currentGames[gameId] = {
 		gameId,
-		players: { [playerId]: playerInfo }
+		players: { [playerId]: playerInfo },
+		hostPlayerId: playerId
 	};
 
 	return {
@@ -70,9 +74,9 @@ function broadcastGameStateToAll(gameInfo: GameInfo): GameRoomInfoMessage {
 
 	values(gameInfo.players).map((playerValue) => {
 		if (playerValue.socket) {
-			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.isHost, yourPlayerId: playerValue.playerId });
+			const isHostValue = merge({}, currentGameInfo.value, { isHost: playerValue.playerId === gameInfo.hostPlayerId, yourPlayerId: playerValue.playerId });
 			playerValue.socket.send(JSON.stringify(
-				merge({}, currentGameInfo, { value: isHostValue})
+				merge({}, currentGameInfo, { value: isHostValue })
 			));
 		}
 	});
@@ -101,7 +105,7 @@ function joinGame(gameId: string, playerId: string, playerInfo: PlayerInfo): Gam
 	return currentGameInfo;
 }
 
-function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket) {
+function addSocketToGame(gameId: string, playerId: string, socket: WrappedSocket) {
 	// deal with missing game?
 	const gameInfo = currentGames[gameId];
 
@@ -153,7 +157,7 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 					loggerService.getLogger().info(`starting game:${gameId}`);
 					// change the socket close behavior to remove players from the game only
 					map(newGame.players, (p) => {
-						if(p.socket) {
+						if (p.socket) {
 							p.socket.onclose = () => {
 								// remove player from the game
 								delete newGame.players[p.playerId];
@@ -161,7 +165,18 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 						}
 					});
 
-					newGame.start((COUNT_DOWN_SECONDS + .1) * 1000);
+					let isSinglePlayer = false;
+					if (keys(newGame.players).length == 1) {
+						range(0, 3).forEach(() => {
+							newGame.joinGame(
+								fakePlayerService.getFakeSocket(),
+								fakePlayerService.getFakePlayerJoinMessage()
+							);
+						});
+						isSinglePlayer = true;
+					}
+
+					newGame.start((COUNT_DOWN_SECONDS + .1) * 1000, isSinglePlayer);
 					delete currentGames[gameId];
 				});
 			} else if (parsedMsg.msgType === "updatePlayerInfo") {
@@ -184,21 +199,26 @@ function addSocketToGame(gameId: string, playerId: string, socket: ws.WebSocket)
 			const maybePlayerInfo = maybeCurrentGame.players[playerId];
 			delete maybeCurrentGame.players[playerId];
 
-			if (maybePlayerInfo.isHost) {
-				// close all sockets? -> client deals on close event the game was cancelled
-				map(maybeCurrentGame.players, (v) => {
-					if (v.socket) {
-						v.socket.close();
+			if (maybePlayerInfo.playerId == maybeCurrentGame.hostPlayerId) {
+				// close all sockets + delete game in 15 mins if there are no connected sockets
+				setTimeout(() => {
+					if (keys(maybeCurrentGame.players).length === 0) {
+						map(maybeCurrentGame.players, (v) => {
+							if (v.socket && v.socket.close) {
+								v.socket.close();
+							}
+						});
+						// delete game info in 15 mins if no sockets are connected
+						delete currentGames[gameId];
 					}
-				});
-				// delete game info
-				delete currentGames[gameId];
+
+
+				}, constants.GAME_KEEP_ALIVE_AFTER_PLAYERS_LEAVE_MILIS)
+				broadcastGameStateToAll(gameInfo);
+
 			}
 			else if (keys(maybeCurrentGame.players).length) {
 				broadcastGameStateToAll(gameInfo);
-			} else {
-				// probably not reachable?
-				delete currentGames[gameId];
 			}
 
 		}
