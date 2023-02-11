@@ -165,7 +165,7 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 		{
 			onClose: (e) => {
 				setSocketClosed(true);
-			}
+			},
 		}
 	);
 	const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());

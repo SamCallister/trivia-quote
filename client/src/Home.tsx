@@ -81,7 +81,7 @@ left:10px;`;
 
 function Home() {
   const playerInfo = useState(localPlayerInfo.getPlayerInfo())[0];
- 
+
   const [isMissingGameModalOpen, setMissingGameModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [joinGameId, setJoinGameId] = useState("");
@@ -92,9 +92,12 @@ function Home() {
     const axiosConfig = {
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     };
-    // call server with post to make new game
+    // call server with post to make new game do not cache
     axios.post("/multiplayer-game", playerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;

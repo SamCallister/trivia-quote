@@ -11,6 +11,9 @@ import { Title } from './components/Components';
 const axiosConfig = {
 	headers: {
 		'Content-Type': 'application/json',
+		'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0',
 	}
 };
 
@@ -39,6 +42,10 @@ function GameRoom() {
 					setMissingGameId(id);
 				});
 		}
+
+		// remove location state
+		window.history.replaceState({}, document.title)
+		
 	}, []);
 
 	if (!gameRoomInfo) {

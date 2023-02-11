@@ -36,6 +36,7 @@ const AnswersOuterContainer = styled.div`
 	z-index:2;
 	position: relative;
 	width: 100%;
+	box-sizing: border-box;
 `;
 
 const IndividualAnswerContainer = styled.div`
@@ -134,7 +135,8 @@ function Question(props: QuestionProps) {
 
 	const { delay, text, choices, score, onChange, questionId, correctAnswer, author, completeText } = props;
 
-	const viewHeight = `${use100vh() * .85}px`;
+	const fullHeight = use100vh() || 0;
+	const viewHeight = `${fullHeight * .85}px`;
 	const [useMeasureRef, bounds] = useMeasure()
 	const [choiceIndex, setChoiceIndex] = useState(null);
 	const [stateChoices, setChoices] = useState(choices);
@@ -259,6 +261,11 @@ function Question(props: QuestionProps) {
 	const negScoreDelta = props.scoreDelta < 0;
 	const posSpeedScoreDelta = props.speedScoreDelta > 0;
 	const negSpeedScoreDelta = props.speedScoreDelta < 0;
+
+	// prevent answers from flashing
+	if (fullHeight === 0) {
+		return;
+	}
 
 	return (
 		<ParentContainer isLightsOut={isLightsOut && choiceSelected} ref={useMeasureRef}>
