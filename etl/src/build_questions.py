@@ -20,7 +20,7 @@ def build_choice(author):
     }
 
 
-df = pd.read_csv('data/newQuotes.csv')
+df = pd.read_csv('data/quotes_v1.csv')
 # filter and validate
 df = validate_df(df)
 records = df.to_dict('records')

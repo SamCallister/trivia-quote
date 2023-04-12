@@ -83,7 +83,7 @@ class Game {
 					).timestamp;
 
 					const elapsedTime = currentTime - questionStartTime;
-					const {humanPlayerId, aiPlayerIds} = aiLogicService.getAiAndHumanPlayerIds(this.players);
+					const { humanPlayerId, aiPlayerIds } = aiLogicService.getAiAndHumanPlayerIds(this.players);
 
 					currentQuestion.firstAnswerPlayerId = aiLogicService.determineFirstAnswer(
 						aiPlayerIds,
@@ -233,9 +233,23 @@ class Game {
 		// place the modifier messages in the array + put reference to modifier in the question message
 		const messages: SocketMessagesUnion[] = [];
 		const prob = constants.QUESTION_MODIFIED_PROBABILITY_BY_ROUND[this.currentRound] || constants.QUESTION_MODIFIED_PROBABILITY;
-		questions.forEach((q) => {
-			if (Math.random() < prob) {
-				const modifier = modifiersService.getRandomModifier();
+
+		// if previous question is a conditional do not allow any modifer
+		// do not allow conditional on last question
+		let previousQuestionIsConditional = false;
+		questions.forEach((q, i) => {
+			if (previousQuestionIsConditional) {
+				previousQuestionIsConditional = false;
+			}
+			else if (Math.random() < prob) {
+				const isLastQuestion = i === questions.length - 1;
+				const modifier = modifiersService.getRandomModifier(isLastQuestion);
+
+				if (modifier.value.isConditional) {
+					previousQuestionIsConditional = true;
+				}
+
+
 				messages.push(modifier);
 				q.value.questionPointTransforms = modifier.value.questionPointTransforms;
 				q.value.modifiedDisplay = modifier.value.modifiedDisplay;
@@ -437,12 +451,21 @@ class Game {
 	getRankingInfo() {
 		// go through players scores
 		const orderedPlayers = sortBy(values(this.players), (p) => -p.playerScore);
+		let previousRankNumber = 0;
+		let previousScore = -9999999;
+
 		const rankingInfo: PlayerRankingInfo[] = orderedPlayers.map((p) => {
+			if (p.playerScore !== previousScore) {
+				previousRankNumber += 1;
+				previousScore = p.playerScore;
+			}
+
 			return {
 				playerName: p.playerName,
 				playerAvatar: p.playerAvatar,
 				playerId: p.playerId,
-				playerScore: p.playerScore
+				playerScore: p.playerScore,
+				rankNumber: previousRankNumber
 			};
 		});
 
@@ -544,11 +567,11 @@ class Game {
 				} else {
 					if (this.gameVsAi) {
 						const currentQuestion = last(this.questionHistory);
-						
+
 						if (!currentQuestion) {
 							throw new Error("currentQuestion is null or undefined");
 						} else {
-							const {aiPlayerIds} = aiLogicService.getAiAndHumanPlayerIds(this.players);
+							const { aiPlayerIds } = aiLogicService.getAiAndHumanPlayerIds(this.players);
 							currentQuestion.firstAnswerPlayerId = sample(aiPlayerIds);
 						}
 					}

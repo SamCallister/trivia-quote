@@ -8,6 +8,7 @@ import constants from './constants';
 import { v4 as uuidv4 } from 'uuid';
 import { merge } from 'lodash';
 import loggerService from './service/logger';
+import cors from 'cors';
 
 
 const NODE_ENV = process.env.NODE_ENV || 'dev';
@@ -17,6 +18,9 @@ const LOG_PATH = process.env.LOG_PATH || "";
 const { app, getWss, applyTo } = expressWs(express());
 const port = process.env.PORT;
 
+app.use(cors({
+	origin: process.env.CORS_ORIGIN
+}));
 
 loggerService.configure(LOG_PATH);
 app.use(cookieParser());
@@ -41,7 +45,6 @@ const router = express.Router();
 
 router.use(loggerService.buildRequestLogger(LOG_PATH));
 
-
 router.get('/', (req, res) => {
 	// serve up react app public index.html
 	res.sendFile('public/index.html', { root: __dirname });
@@ -51,6 +54,9 @@ router.post("/multiplayer-game", (req, res) => {
 	const roomInfo = games.createNewGame(
 		req.cookies[constants.PLAYER_ID_COOKIE_ID],
 		merge({}, req.body, { isHost: true, playerId: req.cookies[constants.PLAYER_ID_COOKIE_ID] }));
+
+	// set sticky session
+	req.cookies[constants.PLAYER_ID_COOKIE_ID] = roomInfo.value.gameId;
 
 	res.status(200).send(roomInfo);
 });
@@ -65,6 +71,9 @@ const joinGame = (req: express.Request, res: express.Response) => {
 	if (!roomInfo) {
 		return res.status(404).send();
 	}
+
+	// set sticky session
+	req.cookies[constants.PLAYER_ID_COOKIE_ID] = roomInfo.value.gameId;
 
 	return res.status(200).send(roomInfo);
 };

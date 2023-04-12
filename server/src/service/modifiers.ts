@@ -2,7 +2,7 @@ import { sample, identity, cloneDeep, concat } from 'lodash';
 import constants from '../constants';
 import { QuestionModifierMessage } from '../types/messageTypes';
 
-const randomCurses:QuestionModifierMessage[] = [
+const randomCurses: QuestionModifierMessage[] = [
 	{
 		msgType: 'questionModifierMessage',
 		delay: constants.QUESTION_MODIFIER_DELAY,
@@ -60,7 +60,7 @@ const randomCurses:QuestionModifierMessage[] = [
 	}
 ];
 
-const onIncorrectCurses:QuestionModifierMessage[] = randomCurses.map((v) => {
+const onIncorrectCurses: QuestionModifierMessage[] = randomCurses.map((v) => {
 	const d = cloneDeep(v);
 	d.value.titleText = "If you get this question wrong...";
 
@@ -73,12 +73,13 @@ const onIncorrectCurses:QuestionModifierMessage[] = randomCurses.map((v) => {
 		modifiedDisplay: d.value.modifiedDisplay
 	};
 	d.value.modifiedDisplay = undefined;
+	d.value.isConditional = true;
 
 	return d;
 });
 
 const titleText = "Next question is...";
-const pointModifiers:QuestionModifierMessage[] = [{
+const pointModifiers: QuestionModifierMessage[] = [{
 	msgType: 'questionModifierMessage',
 	delay: constants.QUESTION_MODIFIER_DELAY,
 	value: {
@@ -148,9 +149,20 @@ const pointModifiers:QuestionModifierMessage[] = [{
 	}
 }];
 
+function getElligibileModifiers(isLastQuestion: boolean) {
+	// do not allow
+	// lastQuestion is conditionalModifier
+	if (isLastQuestion) {
+		return concat(randomCurses, pointModifiers);
+	}
+	
+	return concat(randomCurses, onIncorrectCurses, pointModifiers);
+}
 
-function getRandomModifier(): QuestionModifierMessage {
-	const chosen = sample(concat(randomCurses,pointModifiers,onIncorrectCurses));
+
+function getRandomModifier(isLastQuestion: boolean): QuestionModifierMessage {
+	const elligibleModifiers = getElligibileModifiers(isLastQuestion);
+	const chosen = sample(elligibleModifiers);
 
 
 	if (!chosen) {

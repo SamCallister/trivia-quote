@@ -10,6 +10,11 @@ import Player from "./components/Player";
 import localPlayerInfo from "./service/localPlayerInfo";
 import { Link } from "react-router-dom";
 import HelpModal from "./components/HelpModal";
+import Cookies from "universal-cookie";
+import ClientConstants from "./ClientConstants";
+import { useLocalStorage } from "./hooks/localStorage";
+import { isPlayerUnlocked, getDefaultAvatarId } from "./components/Avatar";
+import { merge } from "lodash";
 
 
 const Wrapper = styled.div`
@@ -78,14 +83,36 @@ position:absolute;
 top:0px;
 left:10px;`;
 
+const ContactLinkContainer = styled.div`
+position:absolute;
+top:0px;
+right:10px;
+`;
 
-function Home() {
-  const playerInfo = useState(localPlayerInfo.getPlayerInfo())[0];
+interface HomeProps {
+  localPlayerInfo: LocalPlayerInfo;
+  updateLocalPlayerInfo: UpdateLocalPlayerInfo;
+}
 
+function Home(props: HomeProps) {
   const [isMissingGameModalOpen, setMissingGameModalOpen] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [joinGameId, setJoinGameId] = useState("");
+  const [cookies, setCookies] = useState(new Cookies());
   const navigate = useNavigate();
+
+  const handleHelpModalClick = () => {
+    props.updateLocalPlayerInfo(merge({}, props.localPlayerInfo, {
+      [localPlayerInfo.VISITED_HELP_PAGE_KEY]: true
+    }));
+    setIsHelpModalOpen(true);
+  };
+
+  const onChangePlayer = (playerInfo: AvatarInfo) => {
+    props.updateLocalPlayerInfo(
+      merge({}, props.localPlayerInfo, playerInfo)
+    );
+  };
 
   const clickCreateNewMultiplayer = () => {
 
@@ -97,8 +124,18 @@ function Home() {
         'Expires': '0',
       }
     };
+
+    // do not allow locked player
+    if (!isPlayerUnlocked(props.localPlayerInfo)) {
+      props.updateLocalPlayerInfo(merge(
+        {},
+        props.localPlayerInfo,
+        { playerAvatar: getDefaultAvatarId() })
+      );
+    }
+
     // call server with post to make new game do not cache
-    axios.post("/multiplayer-game", playerInfo, axiosConfig)
+    axios.post("/multiplayer-game", props.localPlayerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
         navigate(`/${gameRoomInfo.value.gameId}`, {
@@ -118,8 +155,20 @@ function Home() {
         'Content-Type': 'application/json',
       }
     };
+
+    cookies.set(ClientConstants.GAME_ID_COOKIE, joinGameId);
+
+    // do not allow locked player
+    if (!isPlayerUnlocked(props.localPlayerInfo)) {
+      props.updateLocalPlayerInfo(merge(
+        {},
+        props.localPlayerInfo,
+        { playerAvatar: getDefaultAvatarId() })
+      );
+    }
+
     // call server with put to join existing game
-    axios.put(`/multiplayer-game/${joinGameId}`, playerInfo, axiosConfig)
+    axios.put(`/multiplayer-game/${joinGameId}`, props.localPlayerInfo, axiosConfig)
       .then((res) => {
         const gameRoomInfo = res.data as GameRoomInfoMessage;
         navigate(`/${gameRoomInfo.value.gameId}`, {
@@ -134,9 +183,10 @@ function Home() {
 
   return (
     <Wrapper>
-      <HelpModalContainer><Link to={""} onClick={() => setIsHelpModalOpen(true)}>Help</Link></HelpModalContainer>
+      <HelpModalContainer><Link to={""} onClick={handleHelpModalClick}>Help</Link></HelpModalContainer>
+      <ContactLinkContainer><Link to={"/contact"}>Contact</Link></ContactLinkContainer>
       <Title>Trivia Quote</Title>
-      <PlayerContainer><Player></Player></PlayerContainer>
+      <PlayerContainer><Player localPlayerInfo={props.localPlayerInfo} onChange={onChangePlayer}></Player></PlayerContainer>
       <LowerContainer>
         <ButtonContainer>
           <SvgButton clickButtonHandler={clickCreateNewMultiplayer}>

@@ -40,3 +40,5 @@ server/questions.db
 __pycache__
 
 etl/data/*.csv
+client/.env.production
+server/config/.env.prod

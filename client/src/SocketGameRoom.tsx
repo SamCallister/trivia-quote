@@ -17,10 +17,13 @@ import { use100vh } from 'react-div-100vh'
 import ClientConstants from "./ClientConstants";
 import { Link } from "react-router-dom";
 import HelpModal from "./components/HelpModal";
+import { merge } from "lodash";
 
 interface SocketGameRoomProps {
 	gameId: string;
 	gameRoomInfo: GameRoomInfoMessageValue;
+	localPlayerInfo: LocalPlayerInfo;
+	updateLocalPlayerInfo: UpdateLocalPlayerInfo;
 }
 
 const WEB_SOCKET_PREFIX = process.env.NODE_ENV === 'production' ? 'wss' : 'ws';
@@ -168,18 +171,24 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 			},
 		}
 	);
-	const [playerInfo, setPlayerInfo] = useState(localPlayerInfo.getPlayerInfo());
+
 	const [gameRoomInfo, setGameRoomInfo] = useState(props.gameRoomInfo);
 	const [gameStarted, setGameStarted] = useState(false);
-	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0 });
+	const [gameStarting, setGameStarting] = useState({ starting: false, countDownSeconds: 0, isAIGame: false });
 	const [existingInterval, setExistingInterval] = useState(null);
 	const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+
+	const onChangePlayer = (playerInfo: AvatarInfo) => {
+		props.updateLocalPlayerInfo(
+			merge({}, props.localPlayerInfo, playerInfo)
+		);
+	};
 
 	const send = (msg: SocketMessagesUnion) => {
 		sendMessage(JSON.stringify(msg));
 	};
 
-	const debouncedPlayerInfo = useDebounce<PlayerInfo>(playerInfo, 500);
+	const debouncedPlayerInfo = useDebounce<LocalPlayerInfo>(props.localPlayerInfo, 500);
 
 	const startGame = () => {
 		const startGame = { msgType: "startGame" };
@@ -218,9 +227,15 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 			if (socketMessage.msgType === "gameRoomInfo") {
 				setGameRoomInfo(socketMessage.value);
 			} else if (socketMessage.msgType === "startGame") {
+
+				if (process.env.NODE_ENV === 'production') {
+					(window as any).gtag('event', 'gameStart');
+				}
+
 				setGameStarting({
 					starting: true,
-					countDownSeconds: socketMessage.value.countDownSeconds
+					countDownSeconds: socketMessage.value.countDownSeconds,
+					isAIGame: socketMessage.value.isAIGame
 				});
 				// need to transition to another UI
 				// should we just pass the lastJsonMessage and sendMessage down to the component?
@@ -302,18 +317,22 @@ function SocketGameRoom(props: SocketGameRoomProps) {
 
 	if (gameStarted) {
 		return (<GameMultiplayer currentMessage={(lastJsonMessage as unknown) as SocketMessagesUnion}
-			send={send}></GameMultiplayer>);
+			send={send}
+			localPlayerInfo={props.localPlayerInfo}
+			updateLocalPlayerInfo={props.updateLocalPlayerInfo}
+			localPlayerId={props.gameRoomInfo.yourPlayerId}
+			isAIGame={gameStarting.isAIGame}></GameMultiplayer>);
 	}
 
 	return (<GameRoomContainer>
 		<HelpModal
-          open={isHelpModalOpen}
-          onClose={() => setIsHelpModalOpen(false)}></HelpModal>
+			open={isHelpModalOpen}
+			onClose={() => setIsHelpModalOpen(false)}></HelpModal>
 		<ReturnHomeLink>
 			<Link to={"/"}>Home</Link>
 		</ReturnHomeLink>
 		<HelpModalContainer><Link to={""} onClick={() => setIsHelpModalOpen(true)}>Help</Link></HelpModalContainer>
-		<UpperContainer style={{ minHeight: viewHeight }}><PlayerSelectContainer><Player onChange={setPlayerInfo} disabled={gameStarting.starting}></Player></PlayerSelectContainer>
+		<UpperContainer style={{ minHeight: viewHeight }}><PlayerSelectContainer><Player onChange={onChangePlayer} disabled={gameStarting.starting} localPlayerInfo={props.localPlayerInfo} onlyUnlocked={true}></Player></PlayerSelectContainer>
 			<RowsContainer>
 				{gameRoomInfo.players.filter((p) => {
 					return p.playerId !== gameRoomInfo.yourPlayerId;

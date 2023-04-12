@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { values, omit, forOwn, merge, keys, map, range } from 'lodash';
+import { values, omit, forOwn, merge, keys, map } from 'lodash';
 import gamePlay from './gamePlay';
 import loggerService from './logger';
 import constants from '../constants';
@@ -123,7 +123,10 @@ function addSocketToGame(gameId: string, playerId: string, socket: WrappedSocket
 					if (value.socket) {
 						value.socket.send(JSON.stringify({
 							msgType: "startGame",
-							value: { countDownSeconds: COUNT_DOWN_SECONDS }
+							value: {
+								countDownSeconds: COUNT_DOWN_SECONDS,
+								isAIGame: keys(currentGames[gameId].players).length === 1
+							}
 						}));
 					}
 				})
@@ -167,12 +170,13 @@ function addSocketToGame(gameId: string, playerId: string, socket: WrappedSocket
 
 					let isSinglePlayer = false;
 					if (keys(newGame.players).length == 1) {
-						range(0, 3).forEach(() => {
-							newGame.joinGame(
-								fakePlayerService.getFakeSocket(),
-								fakePlayerService.getFakePlayerJoinMessage()
-							);
-						});
+						fakePlayerService.getFakePlayers(3)
+							.forEach((joinGameMessage) => {
+								newGame.joinGame(
+									fakePlayerService.getFakeSocket(),
+									joinGameMessage
+								)
+							});
 						isSinglePlayer = true;
 					}
 

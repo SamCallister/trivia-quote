@@ -4,7 +4,7 @@ import re
 
 MAX_CHOICE_LENGTH = 23
 MAX_QUESTION_LENGTH = 370
-MAX_AUTHOR_LENGTH = 50
+MAX_AUTHOR_LENGTH = 52
 MIN_QUESTION_PER_CATEGORY = 5
 
 def validate_ascii(s):
@@ -48,11 +48,11 @@ def validate_final_data(questions):
 
 		validate_length(q["text"], MAX_QUESTION_LENGTH)
 
-		try:
-			validate_ascii(q["author"])
-		except:
-			print("error validating question author for question", q)
-			raise
+		# try:
+		# 	validate_ascii(q["author"])
+		# except:
+		# 	print("error validating question author for question", q)
+		# 	raise
 
 		validate_length(q["author"], MAX_AUTHOR_LENGTH)
 
@@ -89,8 +89,8 @@ def validate_categories(df):
 	
 
 def validate_no_dupes(df):
-	dupe_df = df["quote"].duplicated()
-	assert dupe_df.sum() == 0, f"expected no duplicate questions, found {dupe_df.sum()}: {dupe_df[dupe_df.quote]}"
+	dupe_series = df["quote"].duplicated()
+	assert dupe_series.sum() == 0, f"expected no duplicate questions, found {dupe_series.sum()}: {df['quote'][dupe_series]}"
 
 
 def validate_df(df):

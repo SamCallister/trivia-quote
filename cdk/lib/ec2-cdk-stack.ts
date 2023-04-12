@@ -8,10 +8,12 @@ import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as path from 'path';
-// import { KeyPair } from 'cdk-ec2-key-pair';
-import { Asset } from 'aws-cdk-lib/aws-s3-assets';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
+import * as codedeploy from 'aws-cdk-lib/aws-codedeploy';
 import { Construct } from 'constructs';
 import { readFileSync } from 'fs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 
 const ELASTIC_IP_ADDRESS = "54.70.187.31";
 const ELASTIC_IP_ALLOCATION_ID = "eipalloc-0b5154af8c4e13dd1";
@@ -52,6 +54,7 @@ export class Ec2CdkStack extends cdk.Stack {
 
 		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'));
 		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'));
+		role.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3ReadOnlyAccess'));
 
 		const asg = new autoscaling.AutoScalingGroup(this, 'ASG', {
 			vpc,
@@ -79,21 +82,22 @@ export class Ec2CdkStack extends cdk.Stack {
 
 		const certificate = new acm.Certificate(this, 'Certificate', {
 			domainName: MY_DOMAIN,
-			validation: acm.CertificateValidation.fromDns(zone),
+			validation: acm.CertificateValidation.fromDns(zone)
 		});
 
-		//route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(lb));
 		const target = route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(lb));
 
 		const aRecord = new route53.ARecord(this, "triviaQuoteARecord", {
 			zone,
 			target,
+			deleteExisting: true
 		});
 
 		const cRecord = new route53.CnameRecord(this, "wTriviaQuoteCRecord", {
 			zone,
 			domainName: "triviaquote.com",
-			recordName: "www.triviaquote.com"
+			recordName: "www.triviaquote.com",
+			deleteExisting: true
 		});
 
 		const listener = lb.addListener("listener", {
@@ -102,9 +106,11 @@ export class Ec2CdkStack extends cdk.Stack {
 			protocol: elbv2.ApplicationProtocol.HTTPS
 		});
 
-		listener.addTargets('Target', {
+		const targetGroup = listener.addTargets('Target', {
 			port: 80,
-			targets: [asg]
+			targets: [asg],
+			stickinessCookieName: "GAME_ID_COOKIE",
+			stickinessCookieDuration: cdk.Duration.days(1)
 		});
 
 		listener.connections.allowDefaultPortFromAnyIpv4('Open to the world');
@@ -115,45 +121,95 @@ export class Ec2CdkStack extends cdk.Stack {
 			targetPort: 443,
 			targetProtocol: elbv2.ApplicationProtocol.HTTPS
 		});
-		
+
+		const serverApp = new codedeploy.ServerApplication(this, "triviaQuoteApp");
+
+		const serverDeploymentRole = new iam.Role(this, "deploymentGroupRole",
+			{
+				managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSCodeDeployRole")],
+				assumedBy: new iam.ServicePrincipal("codedeploy.amazonaws.com"),
+				inlinePolicies: {
+					deployGroupCustomPolicy: new iam.PolicyDocument({
+						statements: [
+							new iam.PolicyStatement({
+								effect: iam.Effect.ALLOW,
+								actions: ["ec2:RunInstances", "ec2:CreateTags", "iam:PassRole"],
+								resources: ["*"]
+							})
+						]
+					})
+				}
+			});
+
+		const cloudFrontDist = new cloudfront.Distribution(this, "staticAssetDistribution", {
+			defaultBehavior: {
+				origin: new origins.HttpOrigin(MY_DOMAIN)
+			}
+		});
+
 		// Create an asset that will be used as part of User Data to run on first load
-		const asset = new Asset(this, 'codeZip', { path: path.join(__dirname, '../../dist.zip') });
+		// const asset = new Asset(this, 'codeZip', { path: path.join(__dirname, '../../dist.zip') });
 
 		const userDataScript = readFileSync(
 			path.join(__dirname, '../src/config.sh')
 			, 'utf8');
 
 		asg.addUserData(userDataScript)
-		const localPath = asg.userData.addS3DownloadCommand({
-			bucket: asset.bucket,
-			bucketKey: asset.s3ObjectKey,
-		});
+		// const localPath = asg.userData.addS3DownloadCommand({
+		// 	bucket: asset.bucket,
+		// 	bucketKey: asset.s3ObjectKey,
+		// });
 
 		asg.userData.addCommands(
-			`mkdir server`,
-			`cd server`,
-			`unzip ${localPath}`,
+			// `mkdir server`,
+			// `cd server`,
+			// `unzip ${localPath}`,
 			`sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:cloudwatch-agent-config.json`, // start cloudwatch agent with config
-			`npm install pm2 -g`,
-			`npm install`,
-			`npm run start:prod`
+			// `npm install`,
+			// `npm run start:prod`
 		)
 
-		asg.userData.addExecuteFileCommand({
-			filePath: localPath,
-			arguments: '--verbose -y'
-		})
+		// asg.userData.addExecuteFileCommand({
+		// 	filePath: localPath,
+		// 	arguments: '--verbose -y'
+		// })
 
 		asg.scaleOnCpuUtilization('AModestLoad', {
 			targetUtilizationPercent: 0.9
 		});
 
-		asset.grantRead(asg.role);
+		// asset.grantRead(asg.role);
 
 		const logGroup = new logs.LogGroup(this, "trivia-quote-logs", {
 			logGroupName: "trivia-quote-logs",
 			retention: logs.RetentionDays.THREE_MONTHS,
 
 		});
+
+		// s3 bucket to put code distributions in
+		const s3Bucket = new s3.Bucket(
+			this, "code-distributions", {
+			bucketName: "trivia-quote-builds",
+			objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED,
+			blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+		});
+
+		// allow my account to read/write to the bucket
+		s3Bucket.grantReadWrite(new iam.AccountRootPrincipal());
+
+		const deploymentGroup = new codedeploy.ServerDeploymentGroup(
+			this,
+			'triviaQuoteGroup',
+			{
+				loadBalancer: codedeploy.LoadBalancer.application(targetGroup),
+				deploymentConfig: codedeploy.ServerDeploymentConfig.ONE_AT_A_TIME,
+				autoScalingGroups: [asg],
+				installAgent: true, // this needs to come after the user data nvm installation
+				application: serverApp,
+				role: serverDeploymentRole
+			}
+		);
+
+		// create role which can be used by code deploy to read from s3 bucket and 
 	}
 }

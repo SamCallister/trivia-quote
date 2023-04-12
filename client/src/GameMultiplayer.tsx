@@ -5,7 +5,7 @@ import styled from "styled-components";
 import RoundIndicator from "./components/RoundIndicator";
 import Question from "./Question";
 import Ranking from "./Ranking";
-import { isNull, first } from "lodash";
+import { isNull, first, merge } from "lodash";
 import { Link } from "react-router-dom";
 import { Title } from './components/Components';
 import UserChooseRound from "./UserChooseRound";
@@ -46,6 +46,18 @@ interface SendFunc {
 interface GameMultiplayerProps {
 	currentMessage: SocketMessagesUnion;
 	send: SendFunc;
+	localPlayerInfo: LocalPlayerInfo;
+	updateLocalPlayerInfo: UpdateLocalPlayerInfo;
+	localPlayerId: string;
+	isAIGame: boolean;
+}
+
+function getFinalScoreMessage(rankings: PlayerRankingInfo[]) {
+	if (rankings.length > 2 && rankings[0].playerScore == rankings[1].playerScore) {
+		return "It's a tie!"
+	} else {
+		return `${first(rankings).playerName} Wins!`;
+	}
 }
 
 function GameMultiplayer(props: GameMultiplayerProps) {
@@ -71,6 +83,31 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 			setPrevUserChoiceRound(props.currentMessage);
 		}
 
+		if (props.currentMessage.msgType === "finalScore") {
+			if (process.env.NODE_ENV === 'production') {
+				(window as any).gtag('event', 'gameEnd');
+			}
+
+			let updates = {};
+			const rankings = props.currentMessage.value.ranking;
+			if (rankings.length >= 2) {
+				const first = rankings[0];
+				const second = rankings[1];
+
+				if (first.playerScore > second.playerScore && first.playerId === props.localPlayerId) {
+
+					const wonUpdate = props.isAIGame ? { wonAIGame: true } : { wonHumanGame: true };
+
+					const numWins = props.localPlayerInfo.numWins === null ? 1 : props.localPlayerInfo.numWins + 1;
+
+					updates = merge(wonUpdate, { numWins: numWins })
+				}
+			}
+
+			props.updateLocalPlayerInfo(
+				merge({}, props.localPlayerInfo, updates, { finishedGame: true })
+			);
+		}
 
 		setMsgData(props.currentMessage);
 	}, [props.currentMessage]);
@@ -138,7 +175,7 @@ function GameMultiplayer(props: GameMultiplayerProps) {
 					<Link to={"/"}>Home</Link>
 				</ReturnHomeLink>
 				<FinalScoreTitle>Final Score</FinalScoreTitle>
-				<WinningPlayerContainer>{first(data.value.ranking).playerName} Wins!</WinningPlayerContainer>
+				<WinningPlayerContainer>{getFinalScoreMessage(data.value.ranking)}</WinningPlayerContainer>
 				<Ranking ranking={data.value.ranking}></Ranking>
 				<IndicatorContainer>
 					<RoundIndicator numRounds={numRounds} roundNumber={data.value.roundNumber}></RoundIndicator>

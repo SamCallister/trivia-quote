@@ -1,10 +1,15 @@
-interface PlayerInfo {
+interface LocalPlayerInfo {
 	playerName: string;
 	playerAvatar: string;
-  }
-  
-  interface GameRoomInfo {
+	visitedHelpPage?: boolean;
+	wonAIGame?: boolean;
+	wonHumanGame?: boolean;
+	numWins?: number;
+	finishedGame?: boolean;
+}
+
+interface GameRoomInfo {
 	gameId: string;
 	players: PlayerInfo[];
 	isHost: boolean;
-  }
+}

@@ -1,0 +1,22 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /server
+hooks:
+  BeforeInstall:
+    - location: ec2Scripts/BeforeInstall.sh
+      timeout: 300
+      runas: root
+  AfterInstall:
+    - location: ec2Scripts/AfterInstall.sh
+      timeout: 300
+      runas: root
+  ApplicationStart:
+    - location: ec2Scripts/ApplicationStart.sh
+      timeout: 300
+      runas: root
+  ApplicationStop:
+    - location: ec2Scripts/ApplicationStop.sh
+      timeout: 300
+      runas: root

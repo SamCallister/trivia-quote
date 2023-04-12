@@ -64,7 +64,7 @@ function Ranking(props: RankingProps) {
 			<RowsContainer>
 				{rankingArray.map((rankingInfo, i) => {
 					return (<PlayerRow key={i}>
-						<RankNumberContainer>{i + 1}{numToSuffix[i + 1] || "th"}</RankNumberContainer>
+						<RankNumberContainer>{rankingInfo.rankNumber}{numToSuffix[rankingInfo.rankNumber] || "th"}</RankNumberContainer>
 						<PlayerContainer>
 							<PlayerView avatarId={rankingInfo.playerAvatar}></PlayerView>
 						</PlayerContainer>

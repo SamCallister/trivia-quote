@@ -1,24 +1,29 @@
-import { uniqueId, random, noop, sample } from "lodash";
+import { uniqueId, noop, range, shuffle } from "lodash";
 import { WrappedSocket } from "../types/messageTypes";
 import { JoinGameMessage } from "../types/messageTypes";
 
-const playerNames = ["Joe", "Molly", "George", "Max", "Lex", "Yvette"]
-const avatarIds = ["manHoodie", "womanEarring", "womanPurse", "manBlueShirt"]
-
-function getFakePlayerJoinMessage(): JoinGameMessage {
+function getFakePlayerJoinMessage(playerName:string, avatarId:string): JoinGameMessage {
     return {
         msgType: "joinGame",
         value: {
-            playerName: getRandomPlayerName(),
+            playerName: playerName,
             playerId: uniqueId(),
-            playerAvatar: sample(avatarIds) || "manHoodie",
+            playerAvatar: avatarId,
             isFakePlayer: true
         }
     };
 }
 
-function getRandomPlayerName(): string {
-    return `${playerNames[random(0, playerNames.length - 1)]} - bot`;
+function getFakePlayers(numPlayers:number): JoinGameMessage[] {
+    const playerNames = shuffle(["Joe", "Molly", "George", "Max", "Lex", "Yvette", "Sarah", "Leeroy", "Fish"]);
+    const avatarIds = shuffle(["manHoodie", "womanEarring", "womanPurse", "manBlueShirt"]);
+
+    return range(0, numPlayers).map(()=>{
+        const playerName = `${playerNames.pop() || "Extra"} - bot`;
+        const avatarId = avatarIds.pop() || "manHoodie";
+
+        return getFakePlayerJoinMessage(playerName, avatarId);
+    });
 }
 
 function getFakeSocket(): WrappedSocket {
@@ -30,4 +35,4 @@ function getFakeSocket(): WrappedSocket {
 	};
 }
 
-export default { getFakePlayerJoinMessage, getFakeSocket };
+export default { getFakePlayers, getFakeSocket };

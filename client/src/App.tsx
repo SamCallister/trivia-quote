@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import "./App.css";
 import Home from "./Home";
+import Contact from "./Contact";
 import GameRoom from "./GameRoom";
 import { Routes, Route, BrowserRouter } from "react-router-dom";
 import { ThemeProvider } from "styled-components";
 import { QueryClient, QueryClientProvider } from 'react-query';
+import { useLocalStorage } from "./hooks/localStorage";
+import localPlayerInfoService from "./service/localPlayerInfo";
 
 const theme = {
   fonts: ["News Cycle"],
@@ -21,13 +24,20 @@ const theme = {
 const queryClient = new QueryClient();
 
 function App() {
+
+  const [localPlayerInfo, setPlayerInfo] = useLocalStorage(
+    localPlayerInfoService.PLAYER_INFO_KEY,
+    localPlayerInfoService.getDefaultPlayer()
+  );
+
   return (
     <ThemeProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
-            <Route path={"/"} element={<Home></Home>} />
-            <Route path={`/:id`} element={<GameRoom></GameRoom>}></Route>
+            <Route path={"/"} element={<Home localPlayerInfo={localPlayerInfo} updateLocalPlayerInfo={setPlayerInfo}></Home>} />
+            <Route path={"/contact"} element={<Contact></Contact>} />
+            <Route path={`/:id`} element={<GameRoom localPlayerInfo={localPlayerInfo} updateLocalPlayerInfo={setPlayerInfo}></GameRoom>}></Route>
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>

@@ -93,12 +93,18 @@ interface PlayerRankingInfo {
 	playerName: string;
 	playerAvatar: string;
 	playerScore: number;
+	rankNumber: number;
 }
 
 interface PlayerInfo {
 	playerName: string;
 	playerAvatar: string;
 	playerId: string;
+}
+
+interface AvatarInfo {
+	playerName: string;
+	playerAvatar: string;
 }
 
 interface RankingMessageValue {
@@ -130,6 +136,7 @@ interface GameRoomInfoMessage extends MessageData {
 
 interface StartGameMessageValue {
 	countDownSeconds: number;
+	isAIGame: boolean;
 }
 
 interface StartGameMessage extends MessageData {

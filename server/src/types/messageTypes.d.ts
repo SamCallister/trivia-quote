@@ -128,6 +128,7 @@ interface PlayerRankingInfo {
 	playerName: string;
 	playerAvatar: string;
 	playerScore: number;
+	rankNumber: number;
 }
 
 interface PlayerInfo {
@@ -163,6 +164,7 @@ interface GameRoomInfoMessage extends MessageData {
 
 interface StartGameMessageValue {
 	countDownSeconds: number;
+	isAIGame: boolean;
 }
 
 interface StartGameMessage extends MessageData {
@@ -254,7 +256,8 @@ interface QuestionModifierMessageValue {
 	text: string[];
 	questionPointTransforms: QuestionPointTransforms;
 	modifiedDisplay?: ModifiedDisplay;
-	questionAfterEffects?: QuestionAfterEffects
+	questionAfterEffects?: QuestionAfterEffects;
+	isConditional?: boolean;
 }
 
 interface QuestionModifierMessage extends MessageData {
