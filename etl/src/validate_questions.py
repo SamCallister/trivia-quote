@@ -1,6 +1,6 @@
 import json
-from functools import reduce
 import re
+from collections import Counter
 
 MAX_CHOICE_LENGTH = 23
 MAX_QUESTION_LENGTH = 370
@@ -77,12 +77,16 @@ def validate_categories(df):
 	# each category group should have at least 5 items
 	counts_df = df.groupby(["category"])["category"].count()
 	categories_to_filter = []
+
 	for category_name, count in counts_df.to_dict().items():
 		if count < MIN_QUESTION_PER_CATEGORY:
 			print(f"Expcted cateogry: {category_name} to have at least {MIN_QUESTION_PER_CATEGORY} questions but it only had {count}")
 			categories_to_filter.append(category_name)
 
 		assert category_name[0].isupper(), "expected category: {category_name} to be capitalized"
+
+	print("category counts", sorted([(count, category) for category, count in Counter(df["category"]).items()]))
+	print('total count', df.count())
 
 	return df[~df["category"].isin(categories_to_filter)]
 
